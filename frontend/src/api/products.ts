@@ -1,5 +1,4 @@
 import { apiFetch } from './client';
-import { API_V1_PREFIX } from '../lib/constants';
 
 export type Category = {
   id: string;
@@ -51,7 +50,7 @@ function queryString(query: ProductQuery = {}) {
 }
 
 export function listCategories(token?: string): Promise<Category[]> {
-  return apiFetch<Category[]>(`${API_V1_PREFIX}/categories`, {
+  return apiFetch<Category[]>("/categories", {
     headers: authHeaders(token),
   });
 }
@@ -60,7 +59,7 @@ export function createCategory(
   input: Pick<Category, 'name'> & Partial<Pick<Category, 'description' | 'active'>>,
   token: string,
 ): Promise<Category> {
-  return apiFetch<Category>(`${API_V1_PREFIX}/categories`, {
+  return apiFetch<Category>("/categories", {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
@@ -72,7 +71,7 @@ export function updateCategory(
   input: Partial<Pick<Category, 'name' | 'description' | 'active'>>,
   token: string,
 ): Promise<Category> {
-  return apiFetch<Category>(`${API_V1_PREFIX}/categories/${categoryId}`, {
+  return apiFetch<Category>("/categories/${categoryId}", {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify(input),
@@ -80,19 +79,19 @@ export function updateCategory(
 }
 
 export function listProducts(query?: ProductQuery, token?: string): Promise<Product[]> {
-  return apiFetch<Product[]>(`${API_V1_PREFIX}/products${queryString(query)}`, {
+  return apiFetch<Product[]>("/products${queryString(query)}", {
     headers: authHeaders(token),
   });
 }
 
 export function getProduct(productId: string, token?: string): Promise<Product> {
-  return apiFetch<Product>(`${API_V1_PREFIX}/products/${productId}`, {
+  return apiFetch<Product>("/products/${productId}", {
     headers: authHeaders(token),
   });
 }
 
 export function createProduct(input: ProductInput, token: string): Promise<Product> {
-  return apiFetch<Product>(`${API_V1_PREFIX}/products`, {
+  return apiFetch<Product>("/products", {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
@@ -104,7 +103,7 @@ export function updateProduct(
   input: Partial<ProductInput>,
   token: string,
 ): Promise<Product> {
-  return apiFetch<Product>(`${API_V1_PREFIX}/products/${productId}`, {
+  return apiFetch<Product>("/products/${productId}", {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify(input),

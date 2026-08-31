@@ -1,5 +1,4 @@
 import { apiFetch } from './client';
-import { API_V1_PREFIX } from '../lib/constants';
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 export type PaymentMethod = 'CASH' | 'QR_PAYMENT';
 
@@ -52,7 +51,7 @@ export function createOrder(
   input: CreateOrderInput,
   token?: string,
 ): Promise<Order> {
-  return apiFetch<Order>(`${API_V1_PREFIX}/table-sessions/${tableSessionId}/orders`, {
+  return apiFetch<Order>("/table-sessions/${tableSessionId}/orders", {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
@@ -64,7 +63,7 @@ export function createQrOrder(
   input: CreateOrderInput,
   token?: string,
 ): Promise<Order> {
-  return apiFetch<Order>(`/api/v1/qr/${encodeURIComponent(qrToken)}/orders`, {
+  return apiFetch<Order>("/api/v1/qr/${encodeURIComponent(qrToken)}/orders", {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
@@ -72,13 +71,13 @@ export function createQrOrder(
 }
 
 export function listSessionOrders(tableSessionId: string, token?: string): Promise<Order[]> {
-  return apiFetch<Order[]>(`${API_V1_PREFIX}/table-sessions/${tableSessionId}/orders`, {
+  return apiFetch<Order[]>("/table-sessions/${tableSessionId}/orders", {
     headers: authHeaders(token),
   });
 }
 
 export function listPendingOrders(token: string): Promise<Order[]> {
-  return apiFetch<Order[]>(`${API_V1_PREFIX}/orders?status=pending`, {
+  return apiFetch<Order[]>("/orders?status=pending", {
     headers: authHeaders(token),
   });
 }
@@ -88,7 +87,7 @@ export function updateOrderStatus(
   status: OrderStatus,
   token: string,
 ): Promise<Order> {
-  return apiFetch<Order>(`${API_V1_PREFIX}/orders/${orderId}/status`, {
+  return apiFetch<Order>("/orders/${orderId}/status", {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ status }),
@@ -100,7 +99,7 @@ export function checkoutSession(
   method: PaymentMethod,
   token?: string,
 ): Promise<CheckoutResponse> {
-  return apiFetch<CheckoutResponse>(`${API_V1_PREFIX}/table-sessions/${tableSessionId}/checkout`, {
+  return apiFetch<CheckoutResponse>("/table-sessions/${tableSessionId}/checkout", {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ method }),
