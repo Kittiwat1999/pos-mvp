@@ -185,7 +185,7 @@ export default function TablesPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className='h-fit lg:sticky lg:top-6'>
             <CardHeader>
               <CardTitle>{selectedTable ? selectedTable.name : 'Table actions'}</CardTitle>
               <CardDescription>{selectedTable ? 'Manage the current table session.' : 'Select a table to begin.'}</CardDescription>

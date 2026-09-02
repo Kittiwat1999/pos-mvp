@@ -9,7 +9,7 @@ import { createQrOrder, type CreateOrderItemInput } from '@/features/orders';
 import { listProducts, type Product } from '@/features/products';
 import { useAuth } from '@/features/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { resolveQrToken } from '@/api/qr';
+import { useQrSession } from '@/hooks/useQrSession';
 
 type CartLine = CreateOrderItemInput & {
   name: string;
@@ -19,8 +19,7 @@ type CartLine = CreateOrderItemInput & {
 export default function OrderingPage() {
   const { sessionToken = '' } = useParams<{ sessionToken: string }>();
   const { token: authToken } = useAuth();
-  const [sessionId, setSessionId] = useState('');
-  const [resolvingSession, setResolvingSession] = useState(true);
+  const { sessionId, loading: resolvingSession, error: sessionError } = useQrSession(sessionToken);
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [search, setSearch] = useState('');
@@ -29,23 +28,6 @@ export default function OrderingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const debouncedSearch = useDebouncedValue(search);
-
-  useEffect(() => {
-    let cancelled = false;
-    setSessionId('');
-    setResolvingSession(true);
-    setError('');
-
-    resolveQrToken(sessionToken)
-      .then((session) => {
-        if (session.status !== 'OPEN') throw new Error('This QR session is closed. Please ask staff for a new QR code.');
-        if (!cancelled) setSessionId(session.session_id);
-      })
-      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : 'This QR code is invalid or expired'); })
-      .finally(() => { if (!cancelled) setResolvingSession(false); });
-
-    return () => { cancelled = true; };
-  }, [sessionToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,12 +101,15 @@ export default function OrderingPage() {
             <p className="mt-2 text-muted-foreground">Add items to your cart and confirm this order round.</p>
           </div>
           <div className="flex gap-2">
-            <Link className={buttonVariants({ variant: 'outline' })} to={`/order/${sessionId}/status`}>Order status</Link>
-            <Link className={buttonVariants({ variant: 'outline' })} to="/tables">Exit</Link>
+            <Link className={buttonVariants({ variant: 'outline' })} to={`/order/${sessionToken}/status`}>Order status</Link>
+            {authToken ?
+              <Link className={buttonVariants({ variant: 'outline' })} to="/tables">
+                Back To Tables
+              </Link> : null}
           </div>
         </div>
 
-        {error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert> : null}
+        {error || sessionError ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error || sessionError?.message}</AlertDescription></Alert> : null}
         {submitted ? <Alert className="mb-6"><AlertDescription>Order submitted successfully. You can place another round whenever you are ready.</AlertDescription></Alert> : null}
 
         {resolvingSession ? <Alert className="mb-6"><AlertDescription>Validating QR session...</AlertDescription></Alert> : null}
@@ -165,7 +150,7 @@ export default function OrderingPage() {
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-lg font-bold"><span>Total</span><span>฿{total.toFixed(2)}</span></div>
-            <Button className="w-full" onClick={() => void submitOrder()} disabled={submitting || resolvingSession || !sessionId}>{submitting ? 'Submitting...' : 'Confirm order'}</Button>
+                  <Button className="w-full" onClick={() => void submitOrder()} disabled={submitting || resolvingSession || !sessionId}>{submitting ? 'Submitting...' : 'Confirm order'}</Button>
                 </div>
               )}
             </CardContent>

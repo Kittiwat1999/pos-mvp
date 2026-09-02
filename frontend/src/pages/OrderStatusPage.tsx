@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { listSessionOrders, type Order, type OrderStatus } from '@/features/orders';
 import { useAuth } from '@/features/auth';
 import { usePolling } from '@/hooks/usePolling';
+import { useQrSession } from '@/hooks/useQrSession';
 
 const statusVariant: Record<OrderStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   PENDING: 'secondary',
@@ -47,8 +48,9 @@ function OrderRound({ order }: { order: Order }) {
 }
 
 export default function OrderStatusPage() {
-  const { sessionId = '' } = useParams<{ sessionId: string }>();
+  const { sessionToken = '' } = useParams<{ sessionToken: string }>();
   const { token } = useAuth();
+  const { sessionId, loading: resolvingSession, error: sessionError } = useQrSession(sessionToken);
   const fetchOrders = useCallback(() => listSessionOrders(sessionId, token ?? undefined), [sessionId, token]);
   const { data: orders, error, loading, refresh } = usePolling<Order[]>(fetchOrders, { enabled: Boolean(sessionId) });
 
@@ -63,12 +65,13 @@ export default function OrderStatusPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => void refresh()} disabled={loading}>Refresh</Button>
-            <Link className={buttonVariants({ variant: 'outline' })} to={`/order/${sessionId}/checkout`}>Checkout</Link>
-            <Link className={buttonVariants()} to={`/order/${sessionId}`}>Order more</Link>
+            <Link className={buttonVariants({ variant: 'outline' })} to={`/order/${sessionToken}/checkout`}>Checkout</Link>
+            <Link className={buttonVariants()} to={`/order/${sessionToken}`}>Order more</Link>
           </div>
         </div>
 
-        {error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error.message}</AlertDescription></Alert> : null}
+        {sessionError || error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{sessionError?.message ?? error?.message}</AlertDescription></Alert> : null}
+        {resolvingSession ? <p className="py-12 text-center text-muted-foreground">Validating QR session...</p> : null}
         {loading && !orders ? <p className="py-12 text-center text-muted-foreground">Loading order status...</p> : null}
         {!loading && orders?.length === 0 ? <Alert><AlertDescription>No order rounds have been placed yet.</AlertDescription></Alert> : null}
         <div className="space-y-4">{orders?.map((order) => <OrderRound key={order.id} order={order} />)}</div>
