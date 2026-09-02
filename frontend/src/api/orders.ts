@@ -42,6 +42,21 @@ export type CheckoutResponse = {
   paid_at: string;
 };
 
+function normalizeOrder(order: Order): Order {
+  return {
+    ...order,
+    subtotal: Number(order.subtotal),
+    discount: Number(order.discount),
+    tax: Number(order.tax),
+    total: Number(order.total),
+    items: order.items.map((item) => ({
+      ...item,
+      unit_price: Number(item.unit_price),
+      discount: Number(item.discount),
+    })),
+  };
+}
+
 function authHeaders(token?: string): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -55,7 +70,7 @@ export function createOrder(
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
-  });
+  }).then(normalizeOrder);
 }
 
 export function createQrOrder(
@@ -63,17 +78,17 @@ export function createQrOrder(
   input: CreateOrderInput,
   token?: string,
 ): Promise<Order> {
-  return apiFetch<Order>(`/api/v1/qr/${encodeURIComponent(qrToken)}/orders`, {
+  return apiFetch<Order>(`/qr/${encodeURIComponent(qrToken)}/orders`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
-  });
+  }).then(normalizeOrder);
 }
 
 export function listSessionOrders(tableSessionId: string, token?: string): Promise<Order[]> {
   return apiFetch<Order[]>(`/table-sessions/${tableSessionId}/orders`, {
     headers: authHeaders(token),
-  });
+  }).then((orders) => orders.map(normalizeOrder));
 }
 
 export function listPendingOrders(token: string): Promise<Order[]> {
@@ -91,7 +106,7 @@ export function updateOrderStatus(
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ status }),
-  });
+  }).then(normalizeOrder);
 }
 
 export function checkoutSession(

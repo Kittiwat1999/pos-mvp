@@ -18,8 +18,8 @@ export default function AppRouter() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/order/:sessionToken" element={<OrderingPage />} />
-        <Route path="/order/:sessionId/status" element={<OrderStatusPage />} />
-        <Route path="/order/:sessionId/checkout" element={<CheckoutPage />} />
+        <Route path="/order/:sessionToken/status" element={<OrderStatusPage />} />
+        <Route path="/order/:sessionToken/checkout" element={<CheckoutPage />} />
         {/* <Route path="/qr-order/" element={<QrOrderPage />} /> */}
       </Route>
       <Route element={<StaffRoutes />}>
