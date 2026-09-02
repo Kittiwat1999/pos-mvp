@@ -8,5 +8,5 @@ export type QrSession = {
 };
 
 export function resolveQrToken(token: string): Promise<QrSession> {
-  return apiFetch<QrSession>("/qr/${encodeURIComponent(token)}");
+  return apiFetch<QrSession>(`/qr/${encodeURIComponent(token)}`);
 }

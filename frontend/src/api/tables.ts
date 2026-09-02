@@ -24,33 +24,33 @@ function authHeaders(token: string): HeadersInit {
 }
 
 export function listTables(token: string): Promise<Table[]> {
-  return apiFetch<Table[]>("/tables", {
+  return apiFetch<Table[]>(`/tables`, {
     headers: authHeaders(token),
   });
 }
 
 export function listTableSessions(token: string): Promise<TableSession[]> {
-  return apiFetch<TableSession[]>("/table-sessions", {
+  return apiFetch<TableSession[]>(`/table-sessions`, {
     headers: authHeaders(token),
   });
 }
 
 export function openTable(tableId: string | number, token: string): Promise<TableSession> {
-  return apiFetch<TableSession>("/tables/${tableId}/open", {
+  return apiFetch<TableSession>(`/tables/${tableId}/open`, {
     method: 'POST',
     headers: authHeaders(token),
   });
 }
 
 export function closeSession(sessionId: string | number, token: string): Promise<TableSession> {
-  return apiFetch<TableSession>("/table-sessions/${sessionId}/close", {
+  return apiFetch<TableSession>(`/table-sessions/${sessionId}/close`, {
     method: 'POST',
     headers: authHeaders(token),
   });
 }
 
 export function markTableCleaned(tableId: string | number, token: string): Promise<Table> {
-  return apiFetch<Table>("/tables/${tableId}/clean", {
+  return apiFetch<Table>(`/tables/${tableId}/clean`, {
     method: 'POST',
     headers: authHeaders(token),
   });
