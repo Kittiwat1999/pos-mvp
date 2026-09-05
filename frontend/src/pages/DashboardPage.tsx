@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useState } from 'react';
+import { Dialog } from '@base-ui/react/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import StaffSidebar from '@/components/layout/StaffSidebar';
 import SummaryCards from '@/components/pos/SummaryCards';
 import TableStatus from '@/components/pos/TableStatus';
@@ -26,31 +26,100 @@ const tableStatus = [
   { name: 'T-04', status: 'Available', variant: 'default' as const },
 ];
 
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 export default function DashboardPage() {
-  const { username, logout } = useAuth();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto flex min-h-screen max-w-7xl">
-        <StaffSidebar />
+    <main className="min-h-screen overflow-x-hidden">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl">
+        <StaffSidebar className="hidden min-h-screen shrink-0 lg:flex" />
 
-        <section className="flex-1 p-4 md:p-6">
-          <Card className="mb-6">
+        <section className="min-w-0 flex-1 overflow-x-hidden p-4 md:p-6">
+          <Card className="mb-6 overflow-hidden">
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <CardDescription>Dashboard</CardDescription>
-                  <CardTitle className="mt-2 text-2xl md:text-3xl">Operations Overview</CardTitle>
+                <div className="flex min-w-0 items-start gap-3">
+                  <Dialog.Root open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                    <Dialog.Trigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 lg:hidden"
+                          aria-label="Open navigation"
+                        />
+                      }
+                    >
+                      <MenuIcon className="size-5" />
+                    </Dialog.Trigger>
+
+                    <Dialog.Portal>
+                      <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 lg:hidden" />
+                      <Dialog.Popup className="fixed inset-y-0 left-0 z-50 w-[min(18rem,100vw)] max-w-full overflow-hidden outline-none transition-transform duration-300 ease-out data-ending-style:-translate-x-full data-starting-style:-translate-x-full lg:hidden">
+                        <Dialog.Title className="sr-only">Staff navigation</Dialog.Title>
+                        <Dialog.Description className="sr-only">
+                          Navigate staff console pages and account actions.
+                        </Dialog.Description>
+                        <div className="relative h-full max-w-full overflow-hidden">
+                          <Dialog.Close
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-4 right-4 z-10"
+                                aria-label="Close navigation"
+                              />
+                            }
+                          >
+                            <CloseIcon className="size-5" />
+                          </Dialog.Close>
+                          <StaffSidebar
+                            className="h-full max-h-dvh w-full max-w-full overflow-y-auto overflow-x-hidden"
+                            onNavigate={() => setMobileNavOpen(false)}
+                          />
+                        </div>
+                      </Dialog.Popup>
+                    </Dialog.Portal>
+                  </Dialog.Root>
+
+                  <div className="min-w-0">
+                    <CardDescription>Dashboard</CardDescription>
+                    <CardTitle className="mt-2 text-2xl md:text-3xl">Operations Overview</CardTitle>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full border border-border bg-background px-3 py-1 text-xs">
-                    {username ?? 'Staff'}
-                  </span>
+                <div className="flex shrink-0 items-center gap-3">
                   <Button variant="outline">Export</Button>
-                  <Button onClick={logout}>
-                    <Link to="/login">Logout</Link>
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -58,9 +127,13 @@ export default function DashboardPage() {
 
           <SummaryCards cards={summaryCards} />
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-            <RecentOrdersTable orders={recentOrders} />
-            <TableStatus tables={tableStatus} />
+          <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[1.5fr_1fr]">
+            <div className="min-w-0">
+              <RecentOrdersTable orders={recentOrders} />
+            </div>
+            <div className="min-w-0">
+              <TableStatus tables={tableStatus} />
+            </div>
           </div>
         </section>
       </div>

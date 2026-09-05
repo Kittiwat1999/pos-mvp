@@ -1,13 +1,33 @@
-import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
+import { Link, useNavigate } from 'react-router-dom';
 
 const navItems = ['Overview', 'Tables', 'Orders', 'Products', 'Customers', 'Settings'];
 
-export default function StaffSidebar() {
+type StaffSidebarProps = {
+  className?: string;
+  onNavigate?: () => void;
+};
+
+export default function StaffSidebar({ className, onNavigate }: StaffSidebarProps) {
+  const { username, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    onNavigate?.();
+    navigate('/login');
+  };
+
   return (
-    <aside className="hidden w-72 border-r border-border bg-card p-6 lg:block">
+    <aside
+      className={cn(
+        'flex w-72 max-w-full flex-col border-r border-border bg-card p-6',
+        className,
+      )}
+    >
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 text-lg font-bold text-primary">
           P
@@ -19,18 +39,29 @@ export default function StaffSidebar() {
       </div>
 
       <nav className="mt-10 space-y-2" aria-label="Staff navigation">
-        {navItems.map((item, index) => (
+        {navItems.map((item, index) =>
           item === 'Products' || item === 'Tables' ? (
-            <Link key={item} to={item === 'Products' ? '/products' : '/tables'} className={buttonVariants({ variant: 'ghost', className: 'w-full justify-between' })}>
-              <span>{item}</span><span className="text-xs text-muted-foreground">0{index + 1}</span>
+            <Link
+              key={item}
+              to={item === 'Products' ? '/products' : '/tables'}
+              onClick={onNavigate}
+              className={buttonVariants({ variant: 'ghost', className: 'w-full justify-between' })}
+            >
+              <span>{item}</span>
+              <span className="text-xs text-muted-foreground">0{index + 1}</span>
             </Link>
           ) : (
-            <Button key={item} variant={index === 0 ? 'default' : 'ghost'} className="w-full justify-between">
+            <Button
+              key={item}
+              variant={index === 0 ? 'default' : 'ghost'}
+              className="w-full justify-between"
+              onClick={onNavigate}
+            >
               <span>{item}</span>
               <span className="text-xs text-muted-foreground">0{index + 1}</span>
             </Button>
-          )
-        ))}
+          ),
+        )}
       </nav>
 
       <Card className="mt-10">
@@ -42,6 +73,16 @@ export default function StaffSidebar() {
           <p className="mt-1 text-sm text-muted-foreground">Sales so far</p>
         </CardContent>
       </Card>
+
+      <div className="mt-auto space-y-3 border-t border-border pt-6">
+        <div className="rounded-md border border-border bg-background px-3 py-2">
+          <p className="text-xs text-muted-foreground">Signed in as</p>
+          <p className="truncate text-sm font-medium">{username ?? 'Staff'}</p>
+        </div>
+        <Button variant="outline" className="w-full" onClick={handleLogout}>
+          Logout
+        </Button>
+      </div>
     </aside>
   );
 }
