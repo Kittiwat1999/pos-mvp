@@ -172,9 +172,10 @@ export default function OrderingPage() {
       </div>
 
       <Button
-        className="fixed inset-x-4 bottom-4 z-30 flex h-12 items-center justify-between rounded-full px-5 shadow-lg lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex h-12 items-center justify-between px-5 shadow-lg lg:hidden"
         onClick={() => setCartOpen(true)}
         aria-label={`View cart with ${cart.reduce((sum, item) => sum + item.quantity, 0)} items`}
+        variant="orange"
       >
         <span>View cart · {cart.reduce((sum, item) => sum + item.quantity, 0)} item{cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? '' : 's'}</span>
         <span>฿{total.toFixed(2)}</span>
@@ -192,10 +193,10 @@ export default function OrderingPage() {
             aria-modal="true"
             aria-labelledby="cart-dialog-title"
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4 bg-[var(--chart-4)]">
               <div>
                 <h2 id="cart-dialog-title" className="text-lg font-semibold">Your order</h2>
-                <p className="text-sm text-muted-foreground">{cart.length} item type{cart.length === 1 ? '' : 's'}</p>
+                <p className="text-sm">{cart.length} item type{cart.length === 1 ? '' : 's'}</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => setCartOpen(false)}>Close</Button>
             </div>
