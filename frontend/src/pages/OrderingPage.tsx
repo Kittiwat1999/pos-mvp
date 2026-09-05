@@ -27,7 +27,19 @@ export default function OrderingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [cartOpen, setCartOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
+
+  useEffect(() => {
+    if (!cartOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCartOpen(false);
+    };
+
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [cartOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +95,7 @@ export default function OrderingPage() {
     try {
       await createQrOrder(sessionToken, { items: cart.map(({ product_id, quantity, note }) => ({ product_id, quantity, note })) }, authToken ?? undefined);
       setCart([]);
+      setCartOpen(false);
       setSubmitted(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to submit the order');
@@ -92,7 +105,7 @@ export default function OrderingPage() {
   };
 
   return (
-    <main className="min-h-screen p-4 md:p-6">
+    <main className="min-h-screen pb-24 p-4 md:p-6 lg:pb-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -137,7 +150,7 @@ export default function OrderingPage() {
             </CardContent>
           </Card>
 
-          <Card className="h-fit lg:sticky lg:top-6">
+          <Card className="hidden h-fit lg:sticky lg:top-6 lg:block">
             <CardHeader><CardTitle>Your order</CardTitle><CardDescription>{cart.length} item type{cart.length === 1 ? '' : 's'}</CardDescription></CardHeader>
             <CardContent>
               {cart.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Your cart is empty.</p> : (
@@ -157,6 +170,53 @@ export default function OrderingPage() {
           </Card>
         </div>
       </div>
+
+      <Button
+        className="fixed inset-x-4 bottom-4 z-30 flex h-12 items-center justify-between rounded-full px-5 shadow-lg lg:hidden"
+        onClick={() => setCartOpen(true)}
+        aria-label={`View cart with ${cart.reduce((sum, item) => sum + item.quantity, 0)} items`}
+      >
+        <span>View cart · {cart.reduce((sum, item) => sum + item.quantity, 0)} item{cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? '' : 's'}</span>
+        <span>฿{total.toFixed(2)}</span>
+      </Button>
+
+      {cartOpen ? (
+        <div
+          className="fixed inset-0 z-40 flex items-end bg-black/50 p-0 sm:items-center sm:p-4 lg:hidden animate-[cart-fade-in_180ms_ease-out]"
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}
+        >
+          <section
+            className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-background shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-dialog-title"
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div>
+                <h2 id="cart-dialog-title" className="text-lg font-semibold">Your order</h2>
+                <p className="text-sm text-muted-foreground">{cart.length} item type{cart.length === 1 ? '' : 's'}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setCartOpen(false)}>Close</Button>
+            </div>
+            <div className="p-5">
+              {cart.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Your cart is empty.</p> : (
+                <div className="space-y-5">
+                  {cart.map((item) => (
+                    <div key={item.product_id} className="border-b border-border pb-4 last:border-0">
+                      <div className="flex items-center justify-between gap-3"><span className="font-medium">{item.name}</span><span>฿{(item.price * item.quantity).toFixed(2)}</span></div>
+                      <div className="mt-3 flex items-center justify-between"><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => changeQuantity(item.product_id, -1)}>-</Button><span className="w-6 text-center">{item.quantity}</span><Button variant="outline" size="sm" onClick={() => changeQuantity(item.product_id, 1)}>+</Button></div><span className="text-sm text-muted-foreground">฿{item.price.toFixed(2)} each</span></div>
+                      <Input className="mt-3" value={item.note ?? ''} onChange={(event) => updateNote(item.product_id, event.target.value)} placeholder="Note (optional)" aria-label={`Note for ${item.name}`} />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-lg font-bold"><span>Total</span><span>฿{total.toFixed(2)}</span></div>
+                  <Button className="w-full" onClick={() => void submitOrder()} disabled={submitting || resolvingSession || !sessionId}>{submitting ? 'Submitting...' : 'Confirm order'}</Button>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
