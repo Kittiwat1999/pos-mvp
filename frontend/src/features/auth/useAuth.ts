@@ -11,6 +11,21 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const syncAuthState = () => {
+      const state = readAuthState();
+      verifiedToken = state.token;
+      setToken(state.token);
+      setUsername(state.username);
+    };
+
+    window.addEventListener('auth-changed', syncAuthState);
+
+    return () => {
+      window.removeEventListener('auth-changed', syncAuthState);
+    };
+  }, []);
+
+  useEffect(() => {
     const state = readAuthState();
 
     if (!state.token) {
@@ -48,7 +63,7 @@ export function useAuth() {
         verifiedToken = state.token;
         const nextUsername = user.username ?? state.username;
         setUsername(nextUsername);
-        writeAuthState({ token: state.token, username: nextUsername });
+        writeAuthState({ token: state.token, username: nextUsername, refreshToken: state.refreshToken });
       })
       .catch(() => {
         verifiedToken = null;
@@ -62,11 +77,11 @@ export function useAuth() {
       });
   }, []);
 
-  const login = (nextToken: string, nextUsername: string) => {
+  const login = (nextToken: string, nextUsername: string, refreshToken: string) => {
     verifiedToken = nextToken;
     setToken(nextToken);
     setUsername(nextUsername);
-    writeAuthState({ token: nextToken, username: nextUsername });
+    writeAuthState({ token: nextToken, username: nextUsername, refreshToken: refreshToken });
   };
 
   const logout = () => {

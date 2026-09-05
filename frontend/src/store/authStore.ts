@@ -3,18 +3,19 @@ import { AUTH_STORAGE_KEY } from '../lib/constants';
 export type AuthState = {
   token: string | null;
   username: string | null;
+  refreshToken: string | null;
 };
 
 export function readAuthState(): AuthState {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
-    return { token: null, username: null };
+    return { token: null, username: null, refreshToken: null };
   }
 
   try {
     return JSON.parse(raw) as AuthState;
   } catch {
-    return { token: null, username: null };
+    return { token: null, username: null, refreshToken: null };
   }
 }
 

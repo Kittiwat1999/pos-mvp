@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     try {
       const result = await login(username, password);
-      storeLogin(result.access_token, username);
+      storeLogin(result.access_token, username, result.refresh_token);
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
