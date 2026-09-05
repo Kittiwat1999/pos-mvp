@@ -25,6 +25,19 @@ def _env_list(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
     value = _env(name)
     return default if value is None else tuple(item.strip() for item in value.split(",") if item.strip())
 
+def _database_url() -> str:
+    url = _env(
+        "DATABASE_URL",
+        "postgresql+psycopg://postgres:postgres@db:5432/pos_mvp",
+    ) or ""
+
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    return url
 
 @dataclass(frozen=True)
 class Settings:
@@ -35,7 +48,7 @@ class Settings:
     JWT_ALGORITHM: str = field(default_factory=lambda: _env("JWT_ALGORITHM", "HS256") or "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = field(default_factory=lambda: _env_int("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
     REFRESH_TOKEN_EXPIRE_DAYS: int = field(default_factory=lambda: _env_int("REFRESH_TOKEN_EXPIRE_DAYS", 7))
-    DATABASE_URL: str = field(default_factory=lambda: _env("DATABASE_URL", "postgresql+psycopg://postgres:postgres@db:5432/pos_mvp") or "")
+    DATABASE_URL: str = field(default_factory=_database_url)
     CORS_ORIGINS: tuple[str, ...] = field(default_factory=lambda: _env_list("CORS_ORIGINS", ("http://localhost:5173", "http://127.0.0.1:5173")))
     MINIO_ENDPOINT: str = field(default_factory=lambda: _env("MINIO_ENDPOINT", "minio:9000") or "")
     MINIO_ACCESS_KEY: str = field(default_factory=lambda: _env("MINIO_ACCESS_KEY", "minioadmin") or "")
