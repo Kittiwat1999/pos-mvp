@@ -42,6 +42,21 @@ export type CheckoutResponse = {
   paid_at: string;
 };
 
+function normalizeOrder(order: Order): Order {
+  return {
+    ...order,
+    subtotal: Number(order.subtotal),
+    discount: Number(order.discount),
+    tax: Number(order.tax),
+    total: Number(order.total),
+    items: order.items.map((item) => ({
+      ...item,
+      unit_price: Number(item.unit_price),
+      discount: Number(item.discount),
+    })),
+  };
+}
+
 function authHeaders(token?: string): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -51,11 +66,11 @@ export function createOrder(
   input: CreateOrderInput,
   token?: string,
 ): Promise<Order> {
-  return apiFetch<Order>("/table-sessions/${tableSessionId}/orders", {
+  return apiFetch<Order>(`/table-sessions/${tableSessionId}/orders`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
-  });
+  }).then(normalizeOrder);
 }
 
 export function createQrOrder(
@@ -63,21 +78,21 @@ export function createQrOrder(
   input: CreateOrderInput,
   token?: string,
 ): Promise<Order> {
-  return apiFetch<Order>("/api/v1/qr/${encodeURIComponent(qrToken)}/orders", {
+  return apiFetch<Order>(`/qr/${encodeURIComponent(qrToken)}/orders`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(input),
-  });
+  }).then(normalizeOrder);
 }
 
 export function listSessionOrders(tableSessionId: string, token?: string): Promise<Order[]> {
-  return apiFetch<Order[]>("/table-sessions/${tableSessionId}/orders", {
+  return apiFetch<Order[]>(`/table-sessions/${tableSessionId}/orders`, {
     headers: authHeaders(token),
-  });
+  }).then((orders) => orders.map(normalizeOrder));
 }
 
 export function listPendingOrders(token: string): Promise<Order[]> {
-  return apiFetch<Order[]>("/orders?status=pending", {
+  return apiFetch<Order[]>(`/orders?status=pending`, {
     headers: authHeaders(token),
   });
 }
@@ -87,11 +102,11 @@ export function updateOrderStatus(
   status: OrderStatus,
   token: string,
 ): Promise<Order> {
-  return apiFetch<Order>("/orders/${orderId}/status", {
+  return apiFetch<Order>(`/orders/${orderId}/status`, {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ status }),
-  });
+  }).then(normalizeOrder);
 }
 
 export function checkoutSession(
@@ -99,7 +114,7 @@ export function checkoutSession(
   method: PaymentMethod,
   token?: string,
 ): Promise<CheckoutResponse> {
-  return apiFetch<CheckoutResponse>("/table-sessions/${tableSessionId}/checkout", {
+  return apiFetch<CheckoutResponse>(`/table-sessions/${tableSessionId}/checkout`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ method }),

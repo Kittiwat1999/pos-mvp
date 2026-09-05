@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { checkoutSession, listSessionOrders, type Order, type PaymentMethod } from '@/features/orders';
 import { useAuth } from '@/features/auth';
 import { usePolling } from '@/hooks/usePolling';
+import { useQrSession } from '@/hooks/useQrSession';
 
 export default function CheckoutPage() {
-  const { sessionId = '' } = useParams<{ sessionId: string }>();
+  const { sessionToken = '' } = useParams<{ sessionToken: string }>();
   const { token } = useAuth();
+  const { sessionId, loading: resolvingSession, error: sessionError } = useQrSession(sessionToken);
   const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [submitting, setSubmitting] = useState(false);
   const [paid, setPaid] = useState(false);
@@ -46,7 +48,8 @@ export default function CheckoutPage() {
           <p className="mt-2 text-muted-foreground">The bill includes every non-cancelled order round in this session.</p>
         </div>
 
-        {error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert> : null}
+        {sessionError || error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{sessionError?.message ?? error}</AlertDescription></Alert> : null}
+        {resolvingSession ? <Alert className="mb-6"><AlertDescription>Validating QR session...</AlertDescription></Alert> : null}
         {paid ? (
           <Card><CardHeader><CardTitle>Payment complete</CardTitle><CardDescription>This table session has been checked out successfully.</CardDescription></CardHeader><CardContent><Link className={buttonVariants()} to="/">Return home</Link></CardContent></Card>
         ) : (
@@ -68,7 +71,7 @@ export default function CheckoutPage() {
                   {(['CASH', 'QR_PAYMENT'] as const).map((option) => <button key={option} type="button" onClick={() => setMethod(option)} className={`rounded-lg border p-4 text-left ${method === option ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}><p className="font-medium">{option === 'CASH' ? 'Cash' : 'QR payment'}</p><p className="mt-1 text-sm text-muted-foreground">{option === 'CASH' ? 'Collect payment at the counter.' : 'Collect payment using a QR code.'}</p></button>)}
                 </div>
                 <Button className="mt-6 w-full" onClick={() => void confirmCheckout()} disabled={submitting || loading || total <= 0}>{submitting ? 'Processing...' : `Confirm ${method === 'CASH' ? 'cash' : 'QR payment'} · ฿${total.toFixed(2)}`}</Button>
-                <Link className="mt-3 block text-center text-sm text-muted-foreground underline" to={`/order/${sessionId}/status`}>Back to order status</Link>
+                <Link className="mt-3 block text-center text-sm text-muted-foreground underline" to={`/order/${sessionToken}/status`}>Back to order status</Link>
               </CardContent>
             </Card>
           </div>

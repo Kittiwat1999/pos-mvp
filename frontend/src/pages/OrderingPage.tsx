@@ -9,7 +9,7 @@ import { createQrOrder, type CreateOrderItemInput } from '@/features/orders';
 import { listProducts, type Product } from '@/features/products';
 import { useAuth } from '@/features/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { resolveQrToken } from '@/api/qr';
+import { useQrSession } from '@/hooks/useQrSession';
 
 type CartLine = CreateOrderItemInput & {
   name: string;
@@ -19,8 +19,7 @@ type CartLine = CreateOrderItemInput & {
 export default function OrderingPage() {
   const { sessionToken = '' } = useParams<{ sessionToken: string }>();
   const { token: authToken } = useAuth();
-  const [sessionId, setSessionId] = useState('');
-  const [resolvingSession, setResolvingSession] = useState(true);
+  const { sessionId, loading: resolvingSession, error: sessionError } = useQrSession(sessionToken);
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [search, setSearch] = useState('');
@@ -28,24 +27,19 @@ export default function OrderingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [cartOpen, setCartOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
 
   useEffect(() => {
-    let cancelled = false;
-    setSessionId('');
-    setResolvingSession(true);
-    setError('');
+    if (!cartOpen) return;
 
-    resolveQrToken(sessionToken)
-      .then((session) => {
-        if (session.status !== 'OPEN') throw new Error('This QR session is closed. Please ask staff for a new QR code.');
-        if (!cancelled) setSessionId(session.session_id);
-      })
-      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : 'This QR code is invalid or expired'); })
-      .finally(() => { if (!cancelled) setResolvingSession(false); });
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCartOpen(false);
+    };
 
-    return () => { cancelled = true; };
-  }, [sessionToken]);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [cartOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +95,7 @@ export default function OrderingPage() {
     try {
       await createQrOrder(sessionToken, { items: cart.map(({ product_id, quantity, note }) => ({ product_id, quantity, note })) }, authToken ?? undefined);
       setCart([]);
+      setCartOpen(false);
       setSubmitted(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to submit the order');
@@ -110,7 +105,7 @@ export default function OrderingPage() {
   };
 
   return (
-    <main className="min-h-screen p-4 md:p-6">
+    <main className="min-h-screen pb-24 p-4 md:p-6 lg:pb-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -119,12 +114,15 @@ export default function OrderingPage() {
             <p className="mt-2 text-muted-foreground">Add items to your cart and confirm this order round.</p>
           </div>
           <div className="flex gap-2">
-            <Link className={buttonVariants({ variant: 'outline' })} to={`/order/${sessionId}/status`}>Order status</Link>
-            <Link className={buttonVariants({ variant: 'outline' })} to="/tables">Exit</Link>
+            <Link className={buttonVariants({ variant: 'outline' })} to={`/order/${sessionToken}/status`}>Order status</Link>
+            {authToken ?
+              <Link className={buttonVariants({ variant: 'outline' })} to="/tables">
+                Back To Tables
+              </Link> : null}
           </div>
         </div>
 
-        {error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert> : null}
+        {error || sessionError ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error || sessionError?.message}</AlertDescription></Alert> : null}
         {submitted ? <Alert className="mb-6"><AlertDescription>Order submitted successfully. You can place another round whenever you are ready.</AlertDescription></Alert> : null}
 
         {resolvingSession ? <Alert className="mb-6"><AlertDescription>Validating QR session...</AlertDescription></Alert> : null}
@@ -152,7 +150,7 @@ export default function OrderingPage() {
             </CardContent>
           </Card>
 
-          <Card className="h-fit lg:sticky lg:top-6">
+          <Card className="hidden h-fit lg:sticky lg:top-6 lg:block">
             <CardHeader><CardTitle>Your order</CardTitle><CardDescription>{cart.length} item type{cart.length === 1 ? '' : 's'}</CardDescription></CardHeader>
             <CardContent>
               {cart.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Your cart is empty.</p> : (
@@ -165,13 +163,61 @@ export default function OrderingPage() {
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-lg font-bold"><span>Total</span><span>฿{total.toFixed(2)}</span></div>
-            <Button className="w-full" onClick={() => void submitOrder()} disabled={submitting || resolvingSession || !sessionId}>{submitting ? 'Submitting...' : 'Confirm order'}</Button>
+                  <Button className="w-full" onClick={() => void submitOrder()} disabled={submitting || resolvingSession || !sessionId}>{submitting ? 'Submitting...' : 'Confirm order'}</Button>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <Button
+        className="fixed inset-x-0 bottom-0 z-30 flex h-12 items-center justify-between px-5 shadow-lg lg:hidden"
+        onClick={() => setCartOpen(true)}
+        aria-label={`View cart with ${cart.reduce((sum, item) => sum + item.quantity, 0)} items`}
+        variant="orange"
+      >
+        <span>View cart · {cart.reduce((sum, item) => sum + item.quantity, 0)} item{cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? '' : 's'}</span>
+        <span>฿{total.toFixed(2)}</span>
+      </Button>
+
+      {cartOpen ? (
+        <div
+          className="fixed inset-0 z-40 flex items-end bg-black/50 p-0 sm:items-center sm:p-4 lg:hidden animate-[cart-fade-in_180ms_ease-out]"
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setCartOpen(false); }}
+        >
+          <section
+            className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-background shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-dialog-title"
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4 bg-[var(--chart-4)]">
+              <div>
+                <h2 id="cart-dialog-title" className="text-lg font-semibold">Your order</h2>
+                <p className="text-sm">{cart.length} item type{cart.length === 1 ? '' : 's'}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setCartOpen(false)}>Close</Button>
+            </div>
+            <div className="p-5">
+              {cart.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Your cart is empty.</p> : (
+                <div className="space-y-5">
+                  {cart.map((item) => (
+                    <div key={item.product_id} className="border-b border-border pb-4 last:border-0">
+                      <div className="flex items-center justify-between gap-3"><span className="font-medium">{item.name}</span><span>฿{(item.price * item.quantity).toFixed(2)}</span></div>
+                      <div className="mt-3 flex items-center justify-between"><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => changeQuantity(item.product_id, -1)}>-</Button><span className="w-6 text-center">{item.quantity}</span><Button variant="outline" size="sm" onClick={() => changeQuantity(item.product_id, 1)}>+</Button></div><span className="text-sm text-muted-foreground">฿{item.price.toFixed(2)} each</span></div>
+                      <Input className="mt-3" value={item.note ?? ''} onChange={(event) => updateNote(item.product_id, event.target.value)} placeholder="Note (optional)" aria-label={`Note for ${item.name}`} />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-lg font-bold"><span>Total</span><span>฿{total.toFixed(2)}</span></div>
+                  <Button className="w-full" onClick={() => void submitOrder()} disabled={submitting || resolvingSession || !sessionId}>{submitting ? 'Submitting...' : 'Confirm order'}</Button>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
