@@ -77,6 +77,8 @@ services:
       - backend
     ports:
       - "5173:5173"
+    env_file:
+      - .env
     environment:
       CI: "true"
       API_BASE_URL: ${API_BASE_URL}
