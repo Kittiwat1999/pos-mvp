@@ -135,7 +135,7 @@ def upgrade() -> None:
 
     op.bulk_insert(tables, [
         {"id": 1, "name": "Table 1", "status": "AVAILABLE"},
-        {"id": 2, "name": "Table 2", "status": "OCCUPIED"},
+        {"id": 2, "name": "Table 2", "status": "AVAILABLE"},
         {"id": 3, "name": "Table 3", "status": "AVAILABLE"},
     ])
 
