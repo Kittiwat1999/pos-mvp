@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { listProducts, type Product } from '@/features/products';
 import { useAuth } from '@/features/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQrSession } from '@/hooks/useQrSession';
+import { toast } from 'sonner';
 
 type CartLine = CreateOrderItemInput & {
   name: string;
@@ -25,10 +26,10 @@ export default function OrderingPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
+  const [cartShake, setCartShake] = useState(false);
 
   useEffect(() => {
     if (!cartOpen) return;
@@ -62,7 +63,7 @@ export default function OrderingPage() {
   const total = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
 
   const addProduct = (product: Product) => {
-    setSubmitted(false);
+    triggerCartShake();
     setCart((current) => {
       const existing = current.find((item) => item.product_id === product.id);
       if (existing) {
@@ -86,7 +87,7 @@ export default function OrderingPage() {
 
   const submitOrder = async () => {
     if (!sessionId || cart.length === 0) {
-      setError('Add at least one product before confirming the order.');
+      toast.error('Add at least one product before confirming the order.');
       return;
     }
 
@@ -96,12 +97,17 @@ export default function OrderingPage() {
       await createQrOrder(sessionToken, { items: cart.map(({ product_id, quantity, note }) => ({ product_id, quantity, note })) }, authToken ?? undefined);
       setCart([]);
       setCartOpen(false);
-      setSubmitted(true);
+      toast.success('Order submitted successfully. You can place another round whenever you are ready.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to submit the order');
+      toast.error(cause instanceof Error ? cause.message : 'Unable to submit the order');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const triggerCartShake = () => {
+    setCartShake(true);
+    setTimeout(() => setCartShake(false), 500);
   };
 
   return (
@@ -123,7 +129,6 @@ export default function OrderingPage() {
         </div>
 
         {error || sessionError ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error || sessionError?.message}</AlertDescription></Alert> : null}
-        {submitted ? <Alert className="mb-6"><AlertDescription>Order submitted successfully. You can place another round whenever you are ready.</AlertDescription></Alert> : null}
 
         {resolvingSession ? <Alert className="mb-6"><AlertDescription>Validating QR session...</AlertDescription></Alert> : null}
         {!resolvingSession && sessionId ? <div className="mb-6 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">QR session active. You can place multiple order rounds during this visit.</div> : null}
@@ -172,12 +177,12 @@ export default function OrderingPage() {
       </div>
 
       <Button
-        className="fixed inset-x-0 bottom-0 z-30 flex h-12 items-center justify-between px-5 shadow-lg lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex h-12 items-center justify-between px-5 shadow-lg lg:hidden "
         onClick={() => setCartOpen(true)}
         aria-label={`View cart with ${cart.reduce((sum, item) => sum + item.quantity, 0)} items`}
         variant="orange"
       >
-        <span>View cart · {cart.reduce((sum, item) => sum + item.quantity, 0)} item{cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? '' : 's'}</span>
+        <span className={cartShake ? 'animate-shake' : ''} >View cart · {cart.reduce((sum, item) => sum + item.quantity, 0)} item{cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? '' : 's'}</span>
         <span>฿{total.toFixed(2)}</span>
       </Button>
 
