@@ -56,3 +56,5 @@ frontend/coverage/
 
 # documents
 docs/
+
+.cursor/
