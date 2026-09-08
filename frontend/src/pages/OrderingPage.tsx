@@ -147,7 +147,7 @@ export default function OrderingPage() {
                   {products.map((product) => (
                     <div key={product.id} className="rounded-xl border border-border p-4">
                       <div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">{product.name}</h2><p className="mt-1 text-sm text-muted-foreground">{product.description || 'Freshly prepared menu item'}</p></div><Badge variant="outline">฿{product.price.toFixed(2)}</Badge></div>
-                      <Button className="mt-4 w-full" onClick={() => addProduct(product)}>Add to order</Button>
+                      <Button className="mt-4 w-full transition-colors duration-300 ease-out hover:bg-primary/90 active:scale-95 active:bg-primary/80" onClick={() => addProduct(product)}>Add to order</Button>
                     </div>
                   ))}
                 </div>

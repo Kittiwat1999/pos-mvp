@@ -8,7 +8,7 @@ from app.models.order import Order, OrderItem
 from app.models.product import Product
 from app.models.table import TableSession
 from app.repositories.order_repo import OrderRepository
-from app.schemas.order import OrderCreate, OrderStatusUpdate
+from app.schemas.order import OrderCreate, OrderStatus, OrderStatusUpdate
 
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     "PENDING": {"CONFIRMED", "CANCELLED"},
@@ -74,8 +74,10 @@ class OrderService:
             raise HTTPException(status_code=404, detail="QR session is invalid or expired")
         return self.orders.list_for_session(session.id)
 
-    def list_pending(self) -> list[Order]:
-        return self.orders.list_pending()
+    def list_orders(self, status: OrderStatus | None = None) -> list[Order]:
+        if status is None:
+            return []
+        return self.orders.list_orders(status)
 
     def update_status(self, order_id: int, payload: OrderStatusUpdate) -> Order:
         order = self.orders.get(order_id)

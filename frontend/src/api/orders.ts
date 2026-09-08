@@ -2,6 +2,24 @@ import { apiFetch } from './client';
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 export type PaymentMethod = 'CASH' | 'QR_PAYMENT';
 
+export const ALLOWED_TRANSITIONS = {
+  PENDING: ["CANCELLED", "CONFIRMED"],
+  CONFIRMED: ["CANCELLED", "COMPLETED"],
+  COMPLETED: [],
+  CANCELLED: [],
+} as const satisfies Record<OrderStatus, readonly OrderStatus[]>;
+
+export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return (ALLOWED_TRANSITIONS[from] as readonly OrderStatus[]).includes(to);
+}
+
+export const orderStatusToButtonActions: Record<OrderStatus, string> = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirm',
+  COMPLETED: 'Complete',
+  CANCELLED: 'Cancel',
+};
+
 export type OrderItem = {
   id: string;
   product_id: string;
@@ -119,4 +137,19 @@ export function checkoutSession(
     headers: authHeaders(token),
     body: JSON.stringify({ method }),
   });
+}
+
+// incoming orders
+export function listOrders(status:string, token?: string): Promise<Order[]> {
+  return apiFetch<Order[]>(`/orders?status=${status}`, {
+    headers: authHeaders(token),
+  }).then((orders) => orders.map(normalizeOrder));
+}
+
+export function updateOrderStatusById(orderId: string, status: OrderStatus, token?: string): Promise<Order> {
+  return apiFetch<Order>(`/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify({ status }),
+  }).then(normalizeOrder);
 }

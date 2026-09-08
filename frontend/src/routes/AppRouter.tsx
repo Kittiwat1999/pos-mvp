@@ -10,6 +10,7 @@ import TablesPage from '../pages/TablesPage';
 import OrderingPage from '../pages/OrderingPage';
 import OrderStatusPage from '../pages/OrderStatusPage';
 import CheckoutPage from '../pages/CheckoutPage';
+import IncomingOrdersPage from '../pages/IncommingOrdersPage';
 
 export default function AppRouter() {
   return (
@@ -26,6 +27,7 @@ export default function AppRouter() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/tables" element={<TablesPage />} />
+        <Route path="/incoming-orders" element={<IncomingOrdersPage />} />
       </Route>
     </Routes>
   );

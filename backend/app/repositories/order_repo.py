@@ -1,3 +1,4 @@
+from app.schemas.order import OrderStatus
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -21,11 +22,15 @@ class OrderRepository:
         )
         return list(self.db.scalars(statement).unique().all())
 
-    def list_pending(self) -> list[Order]:
+    def list_orders(self, status: OrderStatus | None = None) -> list[Order]:
+        order_direction = "desc" if status in {"COMPLETED", "CANCELLED"} else "asc"
         statement = (
             select(Order)
+            .where(Order.status == status)
             .options(selectinload(Order.items))
-            .where(Order.status == "PENDING")
-            .order_by(Order.created_at, Order.id)
+            .order_by(
+                getattr(Order.created_at, order_direction)(),
+                getattr(Order.id, order_direction)(),
+            )
         )
         return list(self.db.scalars(statement).unique().all())
