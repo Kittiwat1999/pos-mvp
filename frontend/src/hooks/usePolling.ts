@@ -50,5 +50,5 @@ export function usePolling<T>(
     };
   }, [enabled, intervalMs, refresh]);
 
-  return { data, error, loading, refresh };
+  return { data, error, loading, refresh, setData };
 }

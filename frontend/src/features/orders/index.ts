@@ -5,6 +5,11 @@ export {
   listPendingOrders,
   listSessionOrders,
   updateOrderStatus,
+  listOrders,
+  updateOrderStatusById,
+  canTransition,
+  ALLOWED_TRANSITIONS,
+  orderStatusToButtonActions,
 } from '../../api/orders';
 export type {
   CreateOrderInput,

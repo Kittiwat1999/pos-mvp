@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.core.deps import get_current_user
-from app.schemas.order import OrderCreate, OrderOut, OrderStatusUpdate
+from app.schemas.order import OrderCreate, OrderOut, OrderStatus, OrderStatusUpdate
 from app.services.order_service import OrderService
 
 router = APIRouter(tags=["orders"])
@@ -30,10 +30,8 @@ def list_qr_orders(qr_token: str, db: Session = Depends(get_db)):
 
 
 @router.get("/orders", response_model=list[OrderOut])
-def list_orders(status_filter: str | None = Query(default=None, alias="status"), db: Session = Depends(get_db), _: dict = Depends(get_current_user)):
-    if status_filter == "pending" or status_filter is None:
-        return OrderService(db).list_pending()
-    return []
+def list_orders(status_filter: OrderStatus | None = Query(default=None, alias="status"), db: Session = Depends(get_db), _: dict = Depends(get_current_user)):
+    return OrderService(db).list_orders(status_filter)
 
 
 @router.patch("/orders/{order_id}/status", response_model=OrderOut)

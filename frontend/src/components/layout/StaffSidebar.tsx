@@ -4,7 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 
-const navItems = ['Overview', 'Tables', 'Orders', 'Products', 'Customers', 'Settings'];
+const navItems = [
+  { name: 'Overview', path: '/dashboard' },
+  { name: 'Tables', path: '/tables' },
+  { name: 'Incoming Orders', path: '/incoming-orders' },
+  { name: 'Products', path: '/products' },
+  { name: 'Customers', path: '/' },
+  { name: 'Settings', path: '/' }
+];
 
 type StaffSidebarProps = {
   className?: string;
@@ -40,27 +47,17 @@ export default function StaffSidebar({ className, onNavigate }: StaffSidebarProp
 
       <nav className="mt-10 space-y-2" aria-label="Staff navigation">
         {navItems.map((item, index) =>
-          item === 'Products' || item === 'Tables' ? (
+          (
             <Link
-              key={item}
-              to={item === 'Products' ? '/products' : '/tables'}
+              key={item.name}
+              to={item.path}
               onClick={onNavigate}
               className={buttonVariants({ variant: 'ghost', className: 'w-full justify-between' })}
             >
-              <span>{item}</span>
+              <span>{item.name}</span>
               <span className="text-xs text-muted-foreground">0{index + 1}</span>
             </Link>
-          ) : (
-            <Button
-              key={item}
-              variant={index === 0 ? 'default' : 'ghost'}
-              className="w-full justify-between"
-              onClick={onNavigate}
-            >
-              <span>{item}</span>
-              <span className="text-xs text-muted-foreground">0{index + 1}</span>
-            </Button>
-          ),
+          ) 
         )}
       </nav>
 
