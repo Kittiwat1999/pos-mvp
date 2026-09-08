@@ -6,7 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { createQrOrder, type CreateOrderItemInput } from '@/features/orders';
-import { listProducts, type Product } from '@/features/products';
+import { listProducts, listCategories, type Product, type Category } from '@/features/products';
 import { useAuth } from '@/features/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQrSession } from '@/hooks/useQrSession';
@@ -22,6 +22,7 @@ export default function OrderingPage() {
   const { token: authToken } = useAuth();
   const { sessionId, loading: resolvingSession, error: sessionError } = useQrSession(sessionToken);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function OrderingPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
   const [cartShake, setCartShake] = useState(false);
+  const [qeuryCategory, setQeuryCategory] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!cartOpen) return;
@@ -43,6 +45,25 @@ export default function OrderingPage() {
   }, [cartOpen]);
 
   useEffect(() => {
+    if (!authToken) {
+      setCategories([]);
+      return;
+    }
+
+    let cancelled = false;
+    listCategories(authToken)
+      .then((result) => {
+        if (!cancelled) {
+          setCategories(result);
+          setQeuryCategory(result[0]?.id);
+        }
+      })
+      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to load the menu'); });
+
+    return () => { cancelled = true; };
+  }, [authToken]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
 
@@ -52,13 +73,13 @@ export default function OrderingPage() {
     }
 
     setError('');
-    listProducts({ active: true, search: debouncedSearch || undefined }, authToken ?? undefined)
+    listProducts({ active: true, category_id: qeuryCategory, search: debouncedSearch || undefined }, authToken ?? undefined)
       .then((result) => { if (!cancelled) setProducts(result); })
       .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to load the menu'); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [authToken, debouncedSearch, sessionId]);
+  }, [authToken, qeuryCategory, debouncedSearch, sessionId]);
 
   const total = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
 
@@ -138,7 +159,15 @@ export default function OrderingPage() {
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div><CardTitle>Available products</CardTitle><CardDescription>Only active menu items are shown.</CardDescription></div>
-                <Input className="sm:max-w-xs" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search menu" aria-label="Search menu" />
+                <div className="flex gap-2">
+                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" name="" id="" value={qeuryCategory} onChange={(event) => setQeuryCategory(event.target.value)}>
+                    <option value="">All categories</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                  <Input className="sm:max-w-xs" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search menu" aria-label="Search menu" />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
