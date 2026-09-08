@@ -18,7 +18,10 @@ class OrderRepository:
             select(Order)
             .options(selectinload(Order.items))
             .where(Order.table_session_id == session_id)
-            .order_by(Order.created_at, Order.id)
+            .order_by(
+                getattr(Order.created_at, "desc")(),
+                getattr(Order.id, "desc")(),
+            )
         )
         return list(self.db.scalars(statement).unique().all())
 

@@ -15,6 +15,7 @@ import {
   type Product,
 } from '@/features/products';
 import { useAuth } from '@/features/auth';
+import ActionConfirmModal from '@/components/common/ActionConfirmModal';
 
 export default function ProductsPage() {
   const { token } = useAuth();
@@ -27,6 +28,11 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [qeuryCategory, setQeuryCategory] = useState('');
+  const [searchProducts, setSearchProducts] = useState('');
+
+  const [selectedInactiveProduct, setSelectedInactiveProduct] = useState<Product | null>(null);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
 
   const loadCatalog = async () => {
     if (!token) return;
@@ -36,7 +42,7 @@ export default function ProductsPage() {
     try {
       const [nextCategories, nextProducts] = await Promise.all([
         listCategories(token),
-        listProducts(undefined, token),
+        listProducts({ category_id: qeuryCategory || undefined, search: searchProducts || undefined }, token),
       ]);
       setCategories(nextCategories);
       setProducts(nextProducts);
@@ -50,7 +56,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     void loadCatalog();
-  }, [token]);
+  }, [token, qeuryCategory, searchProducts]);
 
   const handleCreateCategory = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -96,6 +102,15 @@ export default function ProductsPage() {
       setSaving(false);
     }
   };
+
+  const handleModalToggle = (product: Product) => {
+    if(product.active) {
+      setSelectedInactiveProduct(product);
+      setShowDeactivateModal(true);
+    } else {
+      handleToggleProduct(product);
+    }
+  }
 
   const handleToggleProduct = async (product: Product) => {
     if (!token) return;
@@ -173,6 +188,15 @@ export default function ProductsPage() {
               </div>
             </CardHeader>
             <CardContent>
+              <div className="flex gap-2">
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" name="" id="" value={qeuryCategory} onChange={(event) => setQeuryCategory(event.target.value)}>
+                  <option value="">All categories</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+                <Input className="sm:max-w-xs" value={searchProducts} onChange={(event) => setSearchProducts(event.target.value)} placeholder="Search menu" aria-label="Search menu" />
+              </div>
               {loading ? <p className="py-8 text-center text-muted-foreground">Loading catalog...</p> : products.length === 0 ? <p className="py-8 text-center text-muted-foreground">No products yet.</p> : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
@@ -185,7 +209,12 @@ export default function ProductsPage() {
                           <td className="px-3 py-4 font-medium">{product.name}</td>
                           <td className="px-3 py-4">฿{product.price.toFixed(2)}</td>
                           <td className="px-3 py-4"><Badge variant={product.active ? 'default' : 'secondary'}>{product.active ? 'Active' : 'Inactive'}</Badge></td>
-                          <td className="px-3 py-4 text-right"><Button variant="ghost" size="sm" onClick={() => void handleToggleProduct(product)}>{product.active ? 'Deactivate' : 'Activate'}</Button></td>
+                          <td className="px-3 py-4 text-right">
+                              <Button variant="ghost" size="sm" >Edit</Button>
+                          </td>
+                          <td className="px-3 py-4 text-right">
+                              <Button variant={product.active ? 'secondary' : 'default'} size="sm" onClick={() => void handleModalToggle(product)}>{product.active ? 'Deactivate' : 'Activate'}</Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -196,6 +225,16 @@ export default function ProductsPage() {
           </Card>
         </div>
       </div>
+
+      <ActionConfirmModal
+        isOpen={showDeactivateModal}
+        onClose={() => setShowDeactivateModal(false)}
+        onConfirm={() => {handleToggleProduct(selectedInactiveProduct!); setShowDeactivateModal(false);}}
+        variant="warning"
+        title="Deactivate this product?"
+        description="Guests will no longer be able to purchase this product."
+        confirmText="Deactivate product"
+      />
     </main>
   );
 }
