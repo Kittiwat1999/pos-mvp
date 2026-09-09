@@ -1,32 +1,32 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { login } from '../api/auth';
-import { useAuth } from '../hooks/useAuth';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { BrandBadge } from '@/components/common/BrandBadge';
-import DemoCredentials from '@/components/auth/DemoCredentials';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../api/auth";
+import { useAuth } from "../hooks/useAuth";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BrandBadge } from "@/components/common/BrandBadge";
+import DemoCredentials from "@/components/auth/DemoCredentials";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login: storeLogin } = useAuth();
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("admin123");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const result = await login(username, password);
       storeLogin(result.access_token, username, result.refresh_token);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -38,9 +38,12 @@ export default function LoginPage() {
         <div className="flex flex-col justify-between bg-gradient-to-br from-primary/20 via-card to-background p-8 md:p-10">
           <div>
             <BrandBadge />
-            <h1 className="mt-8 text-4xl font-bold tracking-tight text-foreground">Welcome back</h1>
+            <h1 className="mt-8 text-4xl font-bold tracking-tight text-foreground">
+              Welcome back
+            </h1>
             <p className="mt-4 max-w-sm text-muted-foreground">
-              Manage tables, orders, menu items, and daily operations from one place.
+              Manage tables, orders, menu items, and daily operations from one
+              place.
             </p>
           </div>
 
@@ -49,13 +52,18 @@ export default function LoginPage() {
 
         <div className="p-8 md:p-10">
           <div className="mb-8">
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Staff portal</p>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
+              Staff portal
+            </p>
             <h2 className="mt-3 text-3xl font-bold text-foreground">Sign in</h2>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="username" className="mb-2 block text-sm font-medium text-muted-foreground">
+              <label
+                htmlFor="username"
+                className="mb-2 block text-sm font-medium text-muted-foreground"
+              >
                 Username
               </label>
               <Input
@@ -68,7 +76,10 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-muted-foreground">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-muted-foreground"
+              >
                 Password
               </label>
               <Input
@@ -86,8 +97,13 @@ export default function LoginPage() {
               </Alert>
             ) : null}
 
-            <Button type="submit" disabled={loading} className="w-full" size="lg">
-              {loading ? 'Signing in...' : 'Login'}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+              size="lg"
+            >
+              {loading ? "Signing in..." : "Login"}
             </Button>
           </form>
         </div>

@@ -1,7 +1,14 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export type RecentOrder = {
   id: string;
@@ -11,13 +18,19 @@ export type RecentOrder = {
   status: string;
 };
 
-export default function RecentOrdersTable({ orders }: { orders: RecentOrder[] }) {
+export default function RecentOrdersTable({
+  orders,
+}: {
+  orders: RecentOrder[];
+}) {
   return (
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle>Recent orders</CardTitle>
-          <Button variant="ghost" size="sm">View all</Button>
+          <Button variant="ghost" size="sm">
+            View all
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -39,7 +52,13 @@ export default function RecentOrdersTable({ orders }: { orders: RecentOrder[] })
                 <TableCell>{order.item}</TableCell>
                 <TableCell>{order.total}</TableCell>
                 <TableCell>
-                  <Badge variant={order.status === 'Pending' ? 'secondary' : 'default'}>{order.status}</Badge>
+                  <Badge
+                    variant={
+                      order.status === "Pending" ? "secondary" : "default"
+                    }
+                  >
+                    {order.status}
+                  </Badge>
                 </TableCell>
               </TableRow>
             ))}

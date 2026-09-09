@@ -1,16 +1,16 @@
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
-import { Link, useNavigate } from 'react-router-dom';
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { Link, useNavigate } from "react-router-dom";
 
 const navItems = [
-  { name: 'Overview', path: '/dashboard' },
-  { name: 'Tables', path: '/tables' },
-  { name: 'Incoming Orders', path: '/incoming-orders' },
-  { name: 'Products', path: '/products' },
-  { name: 'Customers', path: '/' },
-  { name: 'Settings', path: '/' }
+  { name: "Overview", path: "/dashboard" },
+  { name: "Tables", path: "/tables" },
+  { name: "Incoming Orders", path: "/incoming-orders" },
+  { name: "Products", path: "/products" },
+  { name: "Customers", path: "/" },
+  { name: "Settings", path: "/" },
 ];
 
 type StaffSidebarProps = {
@@ -18,20 +18,23 @@ type StaffSidebarProps = {
   onNavigate?: () => void;
 };
 
-export default function StaffSidebar({ className, onNavigate }: StaffSidebarProps) {
+export default function StaffSidebar({
+  className,
+  onNavigate,
+}: StaffSidebarProps) {
   const { username, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     onNavigate?.();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     <aside
       className={cn(
-        'flex w-72 max-w-full flex-col border-r border-border bg-card p-6',
+        "flex w-72 max-w-full flex-col border-r border-border bg-card p-6",
         className,
       )}
     >
@@ -46,19 +49,20 @@ export default function StaffSidebar({ className, onNavigate }: StaffSidebarProp
       </div>
 
       <nav className="mt-10 space-y-2" aria-label="Staff navigation">
-        {navItems.map((item, index) =>
-          (
-            <Link
-              key={item.name}
-              to={item.path}
-              onClick={onNavigate}
-              className={buttonVariants({ variant: 'ghost', className: 'w-full justify-between' })}
-            >
-              <span>{item.name}</span>
-              <span className="text-xs text-muted-foreground">0{index + 1}</span>
-            </Link>
-          ) 
-        )}
+        {navItems.map((item, index) => (
+          <Link
+            key={item.name}
+            to={item.path}
+            onClick={onNavigate}
+            className={buttonVariants({
+              variant: "ghost",
+              className: "w-full justify-between",
+            })}
+          >
+            <span>{item.name}</span>
+            <span className="text-xs text-muted-foreground">0{index + 1}</span>
+          </Link>
+        ))}
       </nav>
 
       <Card className="mt-10">
@@ -74,7 +78,7 @@ export default function StaffSidebar({ className, onNavigate }: StaffSidebarProp
       <div className="mt-auto space-y-3 border-t border-border pt-6">
         <div className="rounded-md border border-border bg-background px-3 py-2">
           <p className="text-xs text-muted-foreground">Signed in as</p>
-          <p className="truncate text-sm font-medium">{username ?? 'Staff'}</p>
+          <p className="truncate text-sm font-medium">{username ?? "Staff"}</p>
         </div>
         <Button variant="outline" className="w-full" onClick={handleLogout}>
           Logout

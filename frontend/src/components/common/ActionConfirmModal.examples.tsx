@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import ActionConfirmModal from '@/components/common/ActionConfirmModal';
-import { Button } from '@/components/ui/button';
+import ActionConfirmModal from "@/components/common/ActionConfirmModal";
+import { Button } from "@/components/ui/button";
 
 /**
  * Example-only patterns for ActionConfirmModal.

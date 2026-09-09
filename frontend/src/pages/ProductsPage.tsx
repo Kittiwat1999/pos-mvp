@@ -54,7 +54,7 @@ export default function ProductsPage() {
       <Card><CardHeader><CardTitle>New category</CardTitle><CardDescription>Create a menu grouping for products.</CardDescription></CardHeader><CardContent><form className="flex gap-3" onSubmit={handleCreateCategory}><Input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder="e.g. Drinks" /><Button type="submit" disabled={!categoryName.trim()}>Add</Button></form></CardContent></Card>
       {token ? <ProductForm categories={categories} token={token} onCreated={(product) => setProducts((current) => [...current, product])} /> : null}
     </div>
-    <ProductList products={products} categories={categories} loading={loading} category={queryCategory} search={search} onCategoryChange={setQueryCategory} onSearchChange={setSearch} onRefresh={() => void loadCatalog()} onToggle={(product) => { if (product.active) { setSelectedProduct(product); setShowDeactivateModal(true); } else { void handleToggle(product); } }} />
+      <ProductList products={products} categories={categories} loading={loading} category={queryCategory} search={search} onCategoryChange={setQueryCategory} onSearchChange={setSearch} onRefresh={() => void loadCatalog()} onToggle={(product) => { if (product.active) { setSelectedProduct(product); setShowDeactivateModal(true); } else { void handleToggle(product); } }} />
     </div>
   </div><ActionConfirmModal isOpen={showDeactivateModal} onClose={() => setShowDeactivateModal(false)} onConfirm={() => { if (selectedProduct) void handleToggle(selectedProduct); setShowDeactivateModal(false); }} variant="warning" title="Deactivate this product?" description="Guests will no longer be able to purchase this product." confirmText="Deactivate product" /></main>;
 }

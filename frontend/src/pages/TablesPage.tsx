@@ -1,36 +1,55 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/features/auth';
-import { closeSession, listTables, markTableCleaned, openTable, listTableSessions, type Table, type TableSession } from '@/features/tables';
-import { useTable } from '@/hooks/useTable';
-import { TableActionContent, type ManagedTable } from '@/components/tables';
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useAuth } from "@/features/auth";
+import {
+  closeSession,
+  listTables,
+  markTableCleaned,
+  openTable,
+  listTableSessions,
+  type Table,
+  type TableSession,
+} from "@/features/tables";
+import { useTable } from "@/hooks/useTable";
+import { TableActionContent, type ManagedTable } from "@/components/tables";
 
 const statusVariant = {
-  AVAILABLE: 'default',
-  OCCUPIED: 'secondary',
-  CLEANING: 'warning',
+  AVAILABLE: "default",
+  OCCUPIED: "secondary",
+  CLEANING: "warning",
 } as const;
 
 export default function TablesPage() {
   const { token } = useAuth();
   const [tables, setTables] = useState<ManagedTable[]>([]);
-  const [tableSessions, setTableSessions] = useState<Record<string, TableSession>>({});
+  const [tableSessions, setTableSessions] = useState<
+    Record<string, TableSession>
+  >({});
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [dragOffsetY, setDragOffsetY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
 
-  const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null;
-  const selectedTableSession = selectedTable ? tableSessions[String(selectedTable.id)] ?? null : null;
+  const selectedTable =
+    tables.find((table) => table.id === selectedTableId) ?? null;
+  const selectedTableSession = selectedTable
+    ? (tableSessions[String(selectedTable.id)] ?? null)
+    : null;
   const { canTransition, transitionTo } = useTable(selectedTable);
 
   const handleSelectTable = (tableId: string) => {
@@ -72,7 +91,7 @@ export default function TablesPage() {
     if (!isSheetOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         handleCloseSheet();
       }
     };
@@ -80,12 +99,12 @@ export default function TablesPage() {
     const isMobileOrTablet = window.innerWidth < 1024;
     const originalOverflow = document.body.style.overflow;
     if (isMobileOrTablet) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
       if (isMobileOrTablet) {
         document.body.style.overflow = originalOverflow;
       }
@@ -95,40 +114,53 @@ export default function TablesPage() {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
-        document.body.style.overflow = '';
+        document.body.style.overflow = "";
       } else if (isSheetOpen) {
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = "hidden";
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [isSheetOpen]);
 
   const loadTables = async () => {
     if (!token) return;
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const nextTables = await listTables(token);
       const nextSessions = await listTableSessions(token);
-      setTables(nextTables.map((table) => ({
-        id: String(table.id),
-        name: table.name,
-        status: table.status,
-        created_at: table.created_at,
-        updated_at: table.updated_at,
-      })));
+      setTables(
+        nextTables.map((table) => ({
+          id: String(table.id),
+          name: table.name,
+          status: table.status,
+          created_at: table.created_at,
+          updated_at: table.updated_at,
+        })),
+      );
 
-      setTableSessions(nextSessions.reduce((acc, session) => {
-        acc[String(session.table_id)] = session;
-        return acc;
-      }, {} as Record<string, TableSession>));
-      
-      setSelectedTableId((current) => current && nextTables.some((table) => String(table.id) === current) ? current : null);
+      setTableSessions(
+        nextSessions.reduce(
+          (acc, session) => {
+            acc[String(session.table_id)] = session;
+            return acc;
+          },
+          {} as Record<string, TableSession>,
+        ),
+      );
+
+      setSelectedTableId((current) =>
+        current && nextTables.some((table) => String(table.id) === current)
+          ? current
+          : null,
+      );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load tables');
+      setError(
+        cause instanceof Error ? cause.message : "Unable to load tables",
+      );
     } finally {
       setLoading(false);
     }
@@ -142,36 +174,59 @@ export default function TablesPage() {
     if (!token) return;
 
     setSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       const session = await openTable(String(table.id), token);
       const nextTableId = String(table.id);
 
-      setTables((current) => current.map((item) => item.id === nextTableId ? { ...item, status: 'OCCUPIED', session: { token: session.qr_token, openedAt: session.opened_at, id: session.id } } : item));
+      setTables((current) =>
+        current.map((item) =>
+          item.id === nextTableId
+            ? {
+                ...item,
+                status: "OCCUPIED",
+                session: {
+                  token: session.qr_token,
+                  openedAt: session.opened_at,
+                  id: session.id,
+                },
+              }
+            : item,
+        ),
+      );
       setTableSessions((current) => ({ ...current, [nextTableId]: session }));
       setSelectedTableId(nextTableId);
-      transitionTo('OCCUPIED');
+      transitionTo("OCCUPIED");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to open table');
+      setError(cause instanceof Error ? cause.message : "Unable to open table");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleCheckout = async (table: ManagedTable) => {
-    const sessionId = table.session?.id ?? tableSessions[String(table.id)]?.id ?? selectedTableSession?.id;
+    const sessionId =
+      table.session?.id ??
+      tableSessions[String(table.id)]?.id ??
+      selectedTableSession?.id;
     if (!token || !sessionId) {
-      setError('This table does not have an active session to close.');
+      setError("This table does not have an active session to close.");
       return;
     }
 
     setSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       await closeSession(sessionId, token);
-      setTables((current) => current.map((item) => item.id === table.id ? { ...item, status: 'CLEANING', session: undefined } : item));
+      setTables((current) =>
+        current.map((item) =>
+          item.id === table.id
+            ? { ...item, status: "CLEANING", session: undefined }
+            : item,
+        ),
+      );
       setTableSessions((current) => {
         const next = { ...current };
         delete next[String(table.id)];
@@ -179,9 +234,13 @@ export default function TablesPage() {
       });
       setSelectedTableId(null);
       setIsSheetOpen(false);
-      transitionTo('CLEANING');
+      transitionTo("CLEANING");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to close the table session');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to close the table session",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -191,11 +250,17 @@ export default function TablesPage() {
     if (!token) return;
 
     setSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       await markTableCleaned(String(table.id), token);
-      setTables((current) => current.map((item) => item.id === table.id ? { ...item, status: 'AVAILABLE', session: undefined } : item));
+      setTables((current) =>
+        current.map((item) =>
+          item.id === table.id
+            ? { ...item, status: "AVAILABLE", session: undefined }
+            : item,
+        ),
+      );
       setTableSessions((current) => {
         const next = { ...current };
         delete next[String(table.id)];
@@ -205,9 +270,13 @@ export default function TablesPage() {
         setSelectedTableId(null);
         setIsSheetOpen(false);
       }
-      transitionTo('AVAILABLE');
+      transitionTo("AVAILABLE");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to mark the table as cleaned');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to mark the table as cleaned",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -218,37 +287,66 @@ export default function TablesPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">POS</p>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
+              POS
+            </p>
             <h1 className="mt-2 text-3xl font-bold">Tables</h1>
-            <p className="mt-2 text-muted-foreground">Open a table session, share its QR link, and manage checkout.</p>
+            <p className="mt-2 text-muted-foreground">
+              Open a table session, share its QR link, and manage checkout.
+            </p>
           </div>
-          <Link className={buttonVariants({ variant: 'outline' })} to="/dashboard">Back to dashboard</Link>
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            to="/dashboard"
+          >
+            Back to dashboard
+          </Link>
         </div>
 
-        {error ? <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert> : null}
+        {error ? (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
           <Card className="w-full">
             <CardHeader>
               <CardTitle>Table grid</CardTitle>
-              <CardDescription>{loading ? 'Loading tables...' : `${tables.filter((table) => table.status === 'AVAILABLE').length} available · ${tables.filter((table) => table.status === 'OCCUPIED').length} occupied · ${tables.filter((table) => table.status === 'CLEANING').length} cleaning`}</CardDescription>
+              <CardDescription>
+                {loading
+                  ? "Loading tables..."
+                  : `${tables.filter((table) => table.status === "AVAILABLE").length} available · ${tables.filter((table) => table.status === "OCCUPIED").length} occupied · ${tables.filter((table) => table.status === "CLEANING").length} cleaning`}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? <p className="py-8 text-center text-muted-foreground">Loading tables...</p> : (
+              {loading ? (
+                <p className="py-8 text-center text-muted-foreground">
+                  Loading tables...
+                </p>
+              ) : (
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {tables.map((table) => (
                     <button
                       key={table.id}
                       type="button"
-                      className={`rounded-xl border p-4 text-left transition hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedTableId === table.id ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
+                      className={`rounded-xl border p-4 text-left transition hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedTableId === table.id ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
                       onClick={() => handleSelectTable(table.id)}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-lg font-semibold">{table.name}</span>
-                        <Badge variant={statusVariant[table.status]}>{table.status}</Badge>
+                        <span className="text-lg font-semibold">
+                          {table.name}
+                        </span>
+                        <Badge variant={statusVariant[table.status]}>
+                          {table.status}
+                        </Badge>
                       </div>
                       <p className="mt-4 text-sm text-muted-foreground">
-                        {table.status === 'AVAILABLE' ? 'Ready to open' : table.status === 'OCCUPIED' ? 'Session in progress' : 'Needs cleaning'}
+                        {table.status === "AVAILABLE"
+                          ? "Ready to open"
+                          : table.status === "OCCUPIED"
+                            ? "Session in progress"
+                            : "Needs cleaning"}
                       </p>
                     </button>
                   ))}
@@ -260,18 +358,26 @@ export default function TablesPage() {
           <Card className="hidden h-fit lg:sticky lg:top-6 lg:block">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>{selectedTable ? selectedTable.name : 'Table actions'}</CardTitle>
+                <CardTitle>
+                  {selectedTable ? selectedTable.name : "Table actions"}
+                </CardTitle>
                 {selectedTable ? (
                   <Badge variant={statusVariant[selectedTable.status]}>
                     {selectedTable.status}
                   </Badge>
                 ) : null}
               </div>
-              <CardDescription>{selectedTable ? 'Manage the current table session.' : 'Select a table to begin.'}</CardDescription>
+              <CardDescription>
+                {selectedTable
+                  ? "Manage the current table session."
+                  : "Select a table to begin."}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {!selectedTable ? (
-                <p className="text-sm text-muted-foreground">Choose a table from the grid.</p>
+                <p className="text-sm text-muted-foreground">
+                  Choose a table from the grid.
+                </p>
               ) : (
                 <TableActionContent
                   table={selectedTable}
@@ -303,8 +409,9 @@ export default function TablesPage() {
             aria-modal="true"
             aria-labelledby="sheet-table-title"
             style={{
-              transform: dragOffsetY > 0 ? `translateY(${dragOffsetY}px)` : undefined,
-              transition: isDragging ? 'none' : 'transform 200ms ease-out',
+              transform:
+                dragOffsetY > 0 ? `translateY(${dragOffsetY}px)` : undefined,
+              transition: isDragging ? "none" : "transform 200ms ease-out",
             }}
           >
             {/* Drag handle */}
@@ -318,7 +425,7 @@ export default function TablesPage() {
               tabIndex={0}
               aria-label="Drag down or tap to close"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') handleCloseSheet();
+                if (e.key === "Enter" || e.key === " ") handleCloseSheet();
               }}
             >
               <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30 transition-colors hover:bg-muted-foreground/50" />
@@ -348,7 +455,11 @@ export default function TablesPage() {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </Button>
             </div>

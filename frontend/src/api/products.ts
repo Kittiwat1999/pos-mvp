@@ -49,7 +49,7 @@ function queryString(query: ProductQuery = {}) {
   return value ? `?${value}` : '';
 }
 
-export function listCategories(token?: string): Promise<Category[]> {
+export function listCategories(token?: string | undefined): Promise<Category[]> {
   return apiFetch<Category[]>(`/categories`, {
     headers: authHeaders(token),
   });
