@@ -22,11 +22,11 @@ def create_checkout_setup(client: TestClient, headers: dict[str, str], with_orde
     product = client.post(
         "/api/v1/products",
         headers=headers,
-        json={
-            "category_id": category.json()["id"],
+        data={
+            "category_id": str(category.json()["id"]),
             "name": f"Payment Product {uuid4().hex[:10]}",
             "price": "60.00",
-            "active": True,
+            "active": "true",
         },
     )
     assert product.status_code == 201

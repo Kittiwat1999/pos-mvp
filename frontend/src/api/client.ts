@@ -37,12 +37,16 @@ export async function apiFetch<T>(
   options: RequestInit = {},
   canRefresh = true,
 ): Promise<T> {
+  const headers = new Headers(options.headers);
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  if (!isFormData && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   const response = await fetch(`${API_BASE_URL}${API_PREFIX}${path}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
-    },
+    headers,
   });
 
   if (response.status === 401 && canRefresh && path !== '/auth/refresh') {
