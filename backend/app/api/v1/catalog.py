@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.core.deps import get_current_user
 from app.schemas.catalog import CategoryCreate, CategoryOut, CategoryUpdate, InventoryUpdate, ProductCreate, ProductOut, ProductUpdate
 from app.services.catalog_service import CatalogService
+from app.services.storage_service import StorageService
 
 router = APIRouter(tags=["catalog"])
 
@@ -43,7 +46,30 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
-def create_product(payload: ProductCreate, db: Session = Depends(get_db), _: dict = Depends(get_current_user)):
+def create_product(
+    name: str = Form(..., min_length=1, max_length=150),
+    price: Decimal = Form(..., ge=0),
+    category_id: int = Form(...),
+    description: str | None = Form(default=None, max_length=1000),
+    active: bool = Form(default=True),
+    stock_quantity: int = Form(default=0, ge=0),
+    image: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    image_url: str | None = None
+    if image is not None and image.filename:
+        image_url = StorageService().upload_image(image).image_url
+
+    payload = ProductCreate(
+        name=name,
+        price=price,
+        category_id=category_id,
+        description=description,
+        active=active,
+        stock_quantity=stock_quantity,
+        image_url=image_url,
+    )
     return CatalogService(db).create_product(payload)
 
 

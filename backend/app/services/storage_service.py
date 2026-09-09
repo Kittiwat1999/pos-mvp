@@ -1,19 +1,32 @@
+import io
+import json
 import uuid
-from typing import Any
+from dataclasses import dataclass
 
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy.orm import Session
+from PIL import Image, UnidentifiedImageError
 
 from app.core.config import settings
-from app.models.file_asset import FileAsset
+
+THUMBNAIL_MAX_SIZE = (300, 300)
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"}
+OUTPUT_FORMAT = "WEBP"
+OUTPUT_CONTENT_TYPE = "image/webp"
+OUTPUT_EXTENSION = "webp"
+
+
+@dataclass(frozen=True)
+class UploadedImage:
+    filename: str
+    image_url: str
 
 
 class StorageService:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self) -> None:
         self.bucket = settings.MINIO_BUCKET
+        self.public_base_url = settings.AWS_S3_PUBLIC_URL.rstrip("/")
         self.client = boto3.client(
             "s3",
             endpoint_url=settings.AWS_S3_ENDPOINT_URL,
@@ -28,68 +41,98 @@ class StorageService:
         except ClientError:
             self.client.create_bucket(Bucket=self.bucket)
 
-    def upload_file(self, file: UploadFile) -> FileAsset:
+        self._ensure_public_read_policy()
+
+    def _ensure_public_read_policy(self) -> None:
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": ["*"]},
+                    "Action": ["s3:GetObject"],
+                    "Resource": [f"arn:aws:s3:::{self.bucket}/*"],
+                }
+            ],
+        }
+        try:
+            self.client.put_bucket_policy(Bucket=self.bucket, Policy=json.dumps(policy))
+        except ClientError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to configure media bucket access.",
+            ) from exc
+
+    def build_public_url(self, filename: str) -> str:
+        key = filename.lstrip("/")
+        return f"{self.public_base_url}/{self.bucket}/{key}"
+
+    def get_public_url(self, filename: str) -> str:
+        if not filename or filename.strip() != filename or ".." in filename.split("/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid filename.",
+            )
+        return self.build_public_url(filename)
+
+    def upload_image(self, file: UploadFile) -> UploadedImage:
         if not file.filename:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A file is required.",
             )
 
+        content_type = (file.content_type or "").lower()
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only JPEG, PNG, WebP, or GIF images are allowed.",
+            )
+
         self.ensure_bucket_exists()
 
-        file_bytes = file.file.read()
-        file_key = f"uploads/{uuid.uuid4()}-{file.filename}"
-
-        self.client.put_object(
-            Bucket=self.bucket,
-            Key=file_key,
-            Body=file_bytes,
-            ContentType=file.content_type or "application/octet-stream",
-        )
-
-        asset = FileAsset(
-            filename=file.filename,
-            object_key=file_key,
-            bucket=self.bucket,
-            content_type=file.content_type or "application/octet-stream",
-            size_bytes=len(file_bytes),
-        )
-
-        self.db.add(asset)
-        self.db.commit()
-        self.db.refresh(asset)
-        return asset
-
-    def get_file(self, file_id: int) -> FileAsset:
-        asset = self.db.get(FileAsset, file_id)
-        if asset is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="File not found.",
-            )
-        return asset
-
-    def get_signed_url(self, file_id: int) -> str:
-        asset = self.get_file(file_id)
         try:
-            return self.client.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": asset.bucket, "Key": asset.object_key},
-                ExpiresIn=3600,
+            thumbnail_bytes = self._create_thumbnail(file)
+        except UnidentifiedImageError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file is not a valid image.",
+            ) from exc
+        except OSError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to process image.",
+            ) from exc
+
+        filename = f"uploads/{uuid.uuid4()}.{OUTPUT_EXTENSION}"
+
+        try:
+            self.client.put_object(
+                Bucket=self.bucket,
+                Key=filename,
+                Body=thumbnail_bytes,
+                ContentType=OUTPUT_CONTENT_TYPE,
             )
         except ClientError as exc:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to generate file URL.",
+                detail="Failed to upload image.",
             ) from exc
 
-    def serialize_asset(self, asset: FileAsset) -> dict[str, Any]:
-        return {
-            "id": asset.id,
-            "filename": asset.filename,
-            "object_key": asset.object_key,
-            "bucket": asset.bucket,
-            "content_type": asset.content_type,
-            "size_bytes": asset.size_bytes,
-            "created_at": asset.created_at.isoformat() if asset.created_at else None,
-        }
+        return UploadedImage(filename=filename, image_url=self.build_public_url(filename))
+
+    def _create_thumbnail(self, file: UploadFile) -> bytes:
+        raw = file.file.read()
+        if not raw:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file is empty.",
+            )
+
+        with Image.open(io.BytesIO(raw)) as image:
+            image = image.convert("RGB")
+            image.thumbnail(THUMBNAIL_MAX_SIZE, Image.Resampling.LANCZOS)
+
+            buffer = io.BytesIO()
+            image.save(buffer, format=OUTPUT_FORMAT, quality=85, method=6)
+            return buffer.getvalue()

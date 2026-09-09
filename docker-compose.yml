@@ -63,6 +63,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET}
       MINIO_REGION: ${MINIO_REGION}
       AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL}
+      AWS_S3_PUBLIC_URL: ${AWS_S3_PUBLIC_URL:-http://localhost:9000}
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

@@ -25,12 +25,12 @@ def create_product(client: TestClient, headers: dict[str, str], category_id: int
     response = client.post(
         "/api/v1/products",
         headers=headers,
-        json={
-            "category_id": category_id,
+        data={
+            "category_id": str(category_id),
             "name": f"Integration Product {uuid4().hex[:10]}",
             "description": "Catalog integration product",
             "price": "60.00",
-            "stock_quantity": 10,
+            "stock_quantity": "10",
         },
     )
     assert response.status_code == 201
@@ -133,7 +133,7 @@ def test_create_product_requires_authentication():
         category = create_category(client, headers)
         response = client.post(
             "/api/v1/products",
-            json={"category_id": category["id"], "name": "Unauthorized Product", "price": 10},
+            data={"category_id": str(category["id"]), "name": "Unauthorized Product", "price": "10"},
         )
 
         assert response.status_code == 401
@@ -147,12 +147,13 @@ def test_create_product_returns_created_product():
         response = client.post(
             "/api/v1/products",
             headers=headers,
-            json={"category_id": category["id"], "name": "Created Product", "price": 25.5},
+            data={"category_id": str(category["id"]), "name": "Created Product", "price": "25.5"},
         )
 
         assert response.status_code == 201
         assert response.json()["category_id"] == category["id"]
         assert response.json()["price"] == 25.5
+        assert response.json()["image_url"] is None
         print("test_create_product_returns_created_product: pass")
 
 
