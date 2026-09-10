@@ -15,6 +15,8 @@ import { useCallback, useState } from "react";
 import { IncomingOrder } from "@/components/order/IncomingOrder";
 import { usePolling } from "@/hooks/usePolling";
 import { toast } from "sonner";
+import { IoMdHome } from "react-icons/io";
+
 
 const statusVariant: Record<
   OrderStatus,
@@ -94,7 +96,8 @@ export default function IncommingOrdersPage() {
             className={buttonVariants({ variant: "outline" })}
             to="/dashboard"
           >
-            Back to dashboard
+            <IoMdHome/>
+            Back To Dashboard
           </Link>
         </div>
 

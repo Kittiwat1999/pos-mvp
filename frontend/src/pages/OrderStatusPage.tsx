@@ -19,6 +19,8 @@ import { useAuth } from "@/features/auth";
 import { usePolling } from "@/hooks/usePolling";
 import { useQrSession } from "@/hooks/useQrSession";
 import { OrderRound } from "@/components/order/OrderRound";
+import { IoMdHome } from "react-icons/io";
+
 
 export default function OrderStatusPage() {
   const { sessionToken = "" } = useParams<{ sessionToken: string }>();
@@ -69,6 +71,13 @@ export default function OrderStatusPage() {
             <Link className={buttonVariants()} to={`/order/${sessionToken}`}>
               Order more
             </Link>
+
+            {token ? (
+              <Link className={buttonVariants({ variant: "outline" })} to="/dashboard">
+                <IoMdHome/>
+                Back To Dashboard
+              </Link>
+            ) : null}
           </div>
         </div>
 

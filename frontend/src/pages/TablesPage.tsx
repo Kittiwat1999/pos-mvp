@@ -22,6 +22,8 @@ import {
 } from "@/features/tables";
 import { useTable } from "@/hooks/useTable";
 import { TableActionContent, type ManagedTable } from "@/components/tables";
+import { IoMdHome } from "react-icons/io";
+
 
 const statusVariant = {
   AVAILABLE: "default",
@@ -299,7 +301,8 @@ export default function TablesPage() {
             className={buttonVariants({ variant: "outline" })}
             to="/dashboard"
           >
-            Back to dashboard
+            <IoMdHome/>
+            Back To Dashboard
           </Link>
         </div>
 

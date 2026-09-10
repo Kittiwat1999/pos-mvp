@@ -22,11 +22,47 @@ import { useAuth } from "@/features/auth";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useQrSession } from "@/hooks/useQrSession";
 import { toast } from "sonner";
+import { ProductImage } from "@/components/products/ProductImage";
+import { IoMdHome } from "react-icons/io";
 
 type CartLine = CreateOrderItemInput & {
   name: string;
   price: number;
+  image_url: string | null | undefined;
 };
+
+type ProductListRowProps = {
+  product: Product;
+  onAdd: (product: Product) => void;
+};
+
+function ProductListRow({ product, onAdd }: ProductListRowProps) {
+  return (
+    <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-3 py-3 last:border-b-0">
+      <ProductImage
+        productName={product.name}
+        imageUrl={product.image_url}
+        imageSize="small"
+      />
+      <div className="min-w-0">
+        <h2 className="truncate text-sm font-semibold">{product.name}</h2>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {product.description || "Freshly prepared menu item"}
+        </p>
+        <p className="mt-1 text-sm font-medium text-primary">
+          ฿{product.price.toFixed(2)}
+        </p>
+      </div>
+      <Button
+        size="sm"
+        className="transition-colors duration-300 ease-out hover:bg-primary/90 active:scale-95 active:bg-primary/80"
+        onClick={() => onAdd(product)}
+      >
+        Add
+      </Button>
+    </div>
+  );
+}
 
 export default function OrderingPage() {
   const { sessionToken = "" } = useParams<{ sessionToken: string }>();
@@ -141,6 +177,7 @@ export default function OrderingPage() {
           quantity: 1,
           name: product.name,
           price: product.price,
+          image_url: product.image_url,
         },
       ];
     });
@@ -224,12 +261,23 @@ export default function OrderingPage() {
               Order status
             </Link>
             {authToken ? (
-              <Link
-                className={buttonVariants({ variant: "outline" })}
-                to="/tables"
-              >
-                Back To Tables
-              </Link>
+              <>
+                <Link
+                  className={buttonVariants({ variant: "outline" })}
+                  to="/tables"
+                >
+                  Back To Tables
+                </Link>
+
+                <Link
+                  className={buttonVariants({ variant: "outline" })}
+                  to="/dashboard"
+                  aria-label="Home"
+                >
+                  <IoMdHome />
+                  Back To Dashboard
+                </Link>
+              </>
             ) : null}
           </div>
         </div>
@@ -289,7 +337,7 @@ export default function OrderingPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="">
               {loading ? (
                 <p className="py-8 text-center text-muted-foreground">
                   Loading menu...
@@ -299,38 +347,62 @@ export default function OrderingPage() {
                   No matching products.
                 </p>
               ) : (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="rounded-xl border border-border p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h2 className="font-semibold">{product.name}</h2>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {product.description ||
-                              "Freshly prepared menu item"}
-                          </p>
-                        </div>
-                        <Badge variant="outline">
-                          ฿{product.price.toFixed(2)}
-                        </Badge>
-                      </div>
-                      <Button
-                        className="mt-4 w-full transition-colors duration-300 ease-out hover:bg-primary/90 active:scale-95 active:bg-primary/80"
-                        onClick={() => addProduct(product)}
-                      >
-                        Add to order
-                      </Button>
+                <div className="overflow-hidden rounded-lg border border-border bg-card md:border-0">
+                  <div className="block md:hidden">
+                    <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-muted/40 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      <span className="col-span-2">Product</span>
+                      <span className="text-right">Action</span>
                     </div>
-                  ))}
+                    {products.map((product) => (
+                      <ProductListRow
+                        key={product.id}
+                        product={product}
+                        onAdd={addProduct}
+                      />
+                    ))}
+                  </div>
+                  <div className="hidden gap-4 md:grid md:grid-cols-3">
+                    {products.map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex flex-col justify-between rounded-xl border border-border p-4 transition-colors duration-300 ease-out hover:border-primary/50 hover:bg-primary/5"
+                      >
+                        <div className="mb-3 flex items-end justify-center">
+                          <ProductImage
+                            productName={product.name}
+                            imageUrl={product.image_url}
+                            imageSize="large"
+                          />
+                        </div>
+                        <div className="flex flex-col justify-between">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h2 className="font-semibold">{product.name}</h2>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {product.description ||
+                                  "Freshly prepared menu item"}
+                              </p>
+                            </div>
+                            <Badge variant="outline">
+                              ฿{product.price.toFixed(2)}
+                            </Badge>
+                          </div>
+                          <Button
+                            className="mt-4 w-full transition-colors duration-300 ease-out hover:bg-primary/90 active:scale-95 active:bg-primary/80"
+                            onClick={() => addProduct(product)}
+                          >
+                            Add to order
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="hidden h-fit lg:sticky lg:top-6 lg:block">
+          <Card className="hidden max-h-[100vh] h-fit lg:sticky lg:top-6 lg:block">
             <CardHeader>
               <CardTitle>Your order</CardTitle>
               <CardDescription>
@@ -343,49 +415,63 @@ export default function OrderingPage() {
                   Your cart is empty.
                 </p>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-5 max-h-[85vh] overflow-y-auto">
                   {cart.map((item) => (
                     <div
                       key={item.product_id}
-                      className="border-b border-border pb-4 last:border-0"
+                      className="flex items-start gap-3 border-b border-border pb-4 last:border-0"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium">{item.name}</span>
-                        <span>฿{(item.price * item.quantity).toFixed(2)}</span>
+                      <div className="mb-3 flex items-end justify-center">
+                        <ProductImage
+                          productName={item.name}
+                          imageUrl={item.image_url}
+                          imageSize="small"
+                          className="mt-1 size-12 shrink-0"
+                        />
                       </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => changeQuantity(item.product_id, -1)}
-                          >
-                            -
-                          </Button>
-                          <span className="w-6 text-center">
-                            {item.quantity}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium">{item.name}</span>
+                          <span>
+                            ฿{(item.price * item.quantity).toFixed(2)}
                           </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => changeQuantity(item.product_id, 1)}
-                          >
-                            +
-                          </Button>
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          ฿{item.price.toFixed(2)} each
-                        </span>
+                        <div className="mt-1 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                changeQuantity(item.product_id, -1)
+                              }
+                            >
+                              -
+                            </Button>
+                            <span className="w-6 text-center">
+                              {item.quantity}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => changeQuantity(item.product_id, 1)}
+                            >
+                              +
+                            </Button>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            ฿{item.price.toFixed(2)} each
+                          </span>
+                        </div>
+                        <Input
+                          className="mt-3"
+                          value={item.note ?? ""}
+                          onChange={(event) =>
+                            updateNote(item.product_id, event.target.value)
+                          }
+                          placeholder="Note (optional)"
+                          aria-label={`Note for ${item.name}`}
+                        />
                       </div>
-                      <Input
-                        className="mt-3"
-                        value={item.note ?? ""}
-                        onChange={(event) =>
-                          updateNote(item.product_id, event.target.value)
-                        }
-                        placeholder="Note (optional)"
-                        aria-label={`Note for ${item.name}`}
-                      />
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-lg font-bold">
@@ -428,7 +514,7 @@ export default function OrderingPage() {
           }}
         >
           <section
-            className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-background shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-2xl"
+            className="max-h-[90vh] w-full rounded-t-2xl bg-background shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cart-dialog-title"
@@ -456,49 +542,61 @@ export default function OrderingPage() {
                   Your cart is empty.
                 </p>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-5 overflow-y-auto max-h-[70vh]">
                   {cart.map((item) => (
                     <div
                       key={item.product_id}
-                      className="border-b border-border pb-4 last:border-0"
+                      className="flex items-start gap-3 border-b border-border pb-4 last:border-0"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium">{item.name}</span>
-                        <span>฿{(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => changeQuantity(item.product_id, -1)}
-                          >
-                            -
-                          </Button>
-                          <span className="w-6 text-center">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => changeQuantity(item.product_id, 1)}
-                          >
-                            +
-                          </Button>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          ฿{item.price.toFixed(2)} each
-                        </span>
-                      </div>
-                      <Input
-                        className="mt-3"
-                        value={item.note ?? ""}
-                        onChange={(event) =>
-                          updateNote(item.product_id, event.target.value)
-                        }
-                        placeholder="Note (optional)"
-                        aria-label={`Note for ${item.name}`}
+                      <ProductImage
+                        productName={item.name}
+                        imageUrl={item.image_url}
+                        imageSize="small"
+                        className="mt-1 size-12 shrink-0"
                       />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium">{item.name}</span>
+                          <span>
+                            ฿{(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                changeQuantity(item.product_id, -1)
+                              }
+                            >
+                              -
+                            </Button>
+                            <span className="w-6 text-center">
+                              {item.quantity}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => changeQuantity(item.product_id, 1)}
+                            >
+                              +
+                            </Button>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            ฿{item.price.toFixed(2)} each
+                          </span>
+                        </div>
+                        <Input
+                          className="mt-3"
+                          value={item.note ?? ""}
+                          onChange={(event) =>
+                            updateNote(item.product_id, event.target.value)
+                          }
+                          placeholder="Note (optional)"
+                          aria-label={`Note for ${item.name}`}
+                        />
+                      </div>
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-lg font-bold">
