@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import type { Category, Product } from "@/features/products";
+import { ProductImage } from "@/components/products/ProductImage";
 
 type ProductListProps = {
   products: Product[];
@@ -24,25 +25,6 @@ type ProductListProps = {
   onRefresh: () => void;
   onToggle: (product: Product) => void;
 };
-
-function ProductImage({ product }: { product: Product }) {
-  const [failed, setFailed] = useState(false);
-  const fallback = (
-    <div className="flex h-14 w-14 items-center justify-center rounded-md bg-muted text-muted-foreground">
-      <ImageOff className="size-5" />
-    </div>
-  );
-  return product.image_url && !failed ? (
-    <img
-      src={product.image_url}
-      alt={product.name}
-      className="h-14 w-14 rounded-md object-cover"
-      onError={() => setFailed(true)}
-    />
-  ) : (
-    fallback
-  );
-}
 
 export function ProductList({
   products,
@@ -123,7 +105,7 @@ export function ProductList({
                   >
                     <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
-                        <ProductImage product={product} />
+                        <ProductImage productName={product.name} imageUrl={product.image_url || undefined} imageSize="small" />
                         <span className="font-medium">{product.name}</span>
                       </div>
                     </td>
