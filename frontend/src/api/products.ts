@@ -47,14 +47,21 @@ function authHeaders(token?: string): HeadersInit {
 
 function queryString(query: ProductQuery = {}) {
   const params = new URLSearchParams();
-  if (query.active !== undefined) params.set('active', String(query.active));
-  if (query.category_id) params.set('category_id', query.category_id);
-  if (query.search) params.set('search', query.search);
-  if (query.display) params.set('display', String(query.display) ?? 10)
-  if (query.page) params.set('page', query.page ? String(query.page) : "1")
+  const queryParams = {
+    active: query.active,
+    category_id: query.category_id,
+    search: query.search,
+    display: query.display ?? 10,
+    page: query.page ?? 1,
+  };
 
-  const value = params.toString();
-  return value ? `?${value}` : '';
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      params.set(key, String(value));
+    }
+  });
+
+  return `?${params.toString()}`;
 }
 
 export function listCategories(token?: string | undefined): Promise<Category[]> {
