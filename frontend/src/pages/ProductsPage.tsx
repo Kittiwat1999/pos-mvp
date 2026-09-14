@@ -40,7 +40,6 @@ export default function ProductsPage() {
   const [productTotalCount, setProductTotalCount] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-console.log(currentPage);
   const loadCatalog = useCallback(async () => {
     if (!token) return;
     setLoading(true);

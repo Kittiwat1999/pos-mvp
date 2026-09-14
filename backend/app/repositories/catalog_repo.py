@@ -30,6 +30,9 @@ class ProductRepository:
 
     def list(self, active: bool | None = None, category_id: int | None = None, search: str | None = None, page: int | None = 1, display: int | None = 10,) -> list[Product]:
         statement = select(Product).order_by(Product.name)
+        page_number = max(page or 1, 1)
+        page_size = max(display or 10, 1)
+        
         if active is not None:
             statement = statement.where(Product.active == active)
         if category_id is not None:
@@ -37,7 +40,11 @@ class ProductRepository:
         if search:
             term = f"%{search.strip()}%"
             statement = statement.where(or_(Product.name.ilike(term), Product.description.ilike(term)))
-        statement = statement.where(Product.id >= (display - 10 * page) + 1).limit(display)
+        statement = (
+            statement
+            .offset((page_number - 1) * page_size)
+            .limit(page_size)
+        )
         return list(self.db.scalars(statement).all())
 
     def get(self, product_id: int) -> Product | None:

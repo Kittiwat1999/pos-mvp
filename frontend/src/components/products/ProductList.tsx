@@ -1,8 +1,8 @@
 import { ImageOff } from "lucide-react";
-import { useState, useCallback} from "react";
+import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PosPagination } from "@/components/pos/Pagination"
+import { PosPagination } from "@/components/pos/Pagination";
 
 import {
   Card,
@@ -46,7 +46,7 @@ export function ProductList({
   onRefresh,
   onToggle,
   onEdit,
-  onPageChange
+  onPageChange,
 }: ProductListProps) {
   return (
     <Card>
@@ -130,20 +130,24 @@ export function ProductList({
                         {product.active ? "Active" : "Inactive"}
                       </Badge>
                     </td>
+                    <td className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEdit(product)}
+                      >
+                        <BiSolidPencil className="mr-1 h-4 w-4" />
+                        Edit
+                      </Button>
+                    </td>
                     <td className="px-3 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
-                          <BiSolidPencil className="mr-1 h-4 w-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant={product.active ? "secondary" : "default"}
-                          size="sm"
-                          onClick={() => onToggle(product)}
-                        >
-                          {product.active ? "Deactivate" : "Activate"}
-                        </Button>
-                      </div>
+                      <Button
+                        variant={product.active ? "secondary" : "default"}
+                        size="sm"
+                        onClick={() => onToggle(product)}
+                      >
+                        {product.active ? "Deactivate" : "Activate"}
+                      </Button>
                     </td>
                   </tr>
                 ))}
