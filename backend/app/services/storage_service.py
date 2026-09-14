@@ -136,3 +136,26 @@ class StorageService:
             buffer = io.BytesIO()
             image.save(buffer, format=OUTPUT_FORMAT, quality=85, method=6)
             return buffer.getvalue()
+        
+    def delete_file(self, filename: str) -> None:
+        if (
+            not filename
+            or filename.strip() != filename
+            or ".." in filename.split("/")
+            or not filename.startswith("uploads/")
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid filename.",
+            )
+
+        try:
+            self.client.delete_object(
+                Bucket=self.bucket,
+                Key=filename,
+            )
+        except ClientError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete image.",
+            ) from exc

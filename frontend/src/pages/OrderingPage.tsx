@@ -75,16 +75,17 @@ export default function OrderingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [cartOpen, setCartOpen] = useState(false);
+  const [search, setSearch] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [cartOpen, setCartOpen] = useState<boolean>(false);
   const debouncedSearch = useDebouncedValue(search);
-  const [cartShake, setCartShake] = useState(false);
+  const [cartShake, setCartShake] = useState<boolean>(false);
   const [qeuryCategory, setQeuryCategory] = useState<string | undefined>(
     undefined,
   );
+  const [productsCount, setProductsCount] = useState<number>(0)
 
   useEffect(() => {
     if (!cartOpen) return;
@@ -136,8 +137,11 @@ export default function OrderingPage() {
       },
       authToken ?? undefined,
     )
-      .then((result) => {
-        if (!cancelled) setProducts(result);
+      .then((nextProduct) => {
+        if (!cancelled) {
+          setProducts(nextProduct.items);
+          setProductsCount(nextProduct.total_count)
+        }
       })
       .catch((cause) => {
         if (!cancelled)
@@ -342,7 +346,7 @@ export default function OrderingPage() {
                 <p className="py-8 text-center text-muted-foreground">
                   Loading menu...
                 </p>
-              ) : products.length === 0 ? (
+              ) : productsCount === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
                   No matching products.
                 </p>
