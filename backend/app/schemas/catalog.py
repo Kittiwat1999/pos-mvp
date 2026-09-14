@@ -40,7 +40,14 @@ class ProductBase(BaseModel):
 
 
 class ProductCreate(ProductBase):
-    pass
+    category_id: int | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=150)
+    description: str | None = Field(default=None, max_length=1000)
+    price: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
+    active: bool | None = None
+    stock_quantity: int | None = Field(default=None, ge=0)
+    image_url: str | None = Field(default=None, max_length=500)
+    add_ons: list[dict] | None = None
 
 
 class ProductUpdate(BaseModel):
@@ -68,3 +75,8 @@ class ProductOut(ProductBase):
     @field_serializer("price")
     def serialize_price(self, value: Decimal) -> float:
         return float(value)
+
+
+class ProductListResponse(BaseModel):
+    items: list[ProductOut]
+    total_count: int

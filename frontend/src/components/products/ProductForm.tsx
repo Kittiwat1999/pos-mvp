@@ -27,23 +27,32 @@ import {
   createProduct,
   type Category,
   type Product,
+  updateProduct,
 } from "@/features/products";
 import {
   productFormSchema,
   type ProductFormInput,
   type ProductFormValues,
 } from "@/features/products/productFormSchema";
+import { BiPlus } from "react-icons/bi";
+import { BiArrowToTop } from "react-icons/bi";
 
 type ProductFormProps = {
   categories: Category[];
   token: string;
+  onEdit: boolean;
   onCreated: (product: Product) => void;
+  onEditCencel: () => void;
+  selectedProduct: Product | null;
 };
 
 export function ProductForm({
   categories,
   token,
   onCreated,
+  onEdit,
+  onEditCencel,
+  selectedProduct,
 }: ProductFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -58,6 +67,36 @@ export function ProductForm({
     },
   });
   const image = form.watch("image");
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedProduct?.image_url) {
+      setExistingImageUrl(selectedProduct.image_url);
+    } else {
+      setExistingImageUrl(null);
+    }
+  }, [selectedProduct]);
+
+  useEffect(() => {
+    if (!selectedProduct) {
+      form.reset({
+        name: "",
+        price: undefined,
+        category_id: "",
+        description: "",
+        image: null,
+      });
+      return;
+    }
+
+    form.reset({
+      name: selectedProduct.name,
+      price: selectedProduct.price,
+      category_id: String(selectedProduct.category_id),
+      description: selectedProduct.description ?? "",
+      image: null,
+    });
+  }, [selectedProduct, form]);
 
   useEffect(() => {
     if (!image) {
@@ -69,8 +108,27 @@ export function ProductForm({
     return () => URL.revokeObjectURL(url);
   }, [image]);
 
-  const submit = async (values: ProductFormValues) => {
+  const handleSave = async (values: ProductFormValues) => {
     try {
+      if (onEdit && selectedProduct) {
+        const updated = await updateProduct(
+          selectedProduct.id,
+          {
+            name: values.name,
+            price: values.price,
+            category_id: values.category_id,
+            description: values.description || undefined,
+            image: values.image ?? undefined,
+            active: selectedProduct.active,
+          },
+          token,
+        );
+        onCreated(updated);
+        onEditCencel();
+        toast.success("Product updated successfully");
+        return;
+      }
+
       const product = await createProduct(
         {
           name: values.name,
@@ -86,34 +144,37 @@ export function ProductForm({
       form.reset({
         name: "",
         price: undefined,
-        category_id: values.category_id,
+        category_id: "",
         description: "",
         image: null,
       });
       toast.success("Product created successfully");
     } catch (cause) {
       toast.error(
-        cause instanceof Error ? cause.message : "Unable to create the product",
+        cause instanceof Error ? cause.message : "Unable to save the product",
       );
     }
   };
 
   const clearImage = () => {
     form.setValue("image", null, { shouldValidate: true });
+    setExistingImageUrl(null);
     if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New product</CardTitle>
+        <CardTitle>{onEdit ? "Edit product" : "New product"}</CardTitle>
         <CardDescription>
-          Add an item to the menu, including an optional image.
+          {onEdit
+            ? "Update this menu item and replace the image if needed."
+            : "Add an item to the menu, including an optional image."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(submit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -143,7 +204,9 @@ export function ProductForm({
                         name={field.name}
                         ref={field.ref}
                         onBlur={field.onBlur}
-                        value={field.value as number | undefined}
+                        value={
+                          (field.value as string | number | undefined) ?? ""
+                        }
                         onChange={(event) => field.onChange(event.target.value)}
                       />
                     </FormControl>
@@ -158,7 +221,7 @@ export function ProductForm({
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <FormControl>
-                      <Select {...field}>
+                      <Select {...field} value={field.value ?? ""}>
                         <option value="">Select category</option>
                         {categories.map((category) => (
                           <option key={category.id} value={category.id}>
@@ -213,16 +276,16 @@ export function ProductForm({
                           onChange(event.target.files?.[0] ?? null)
                         }
                       />
-                      {previewUrl ? (
+                      {previewUrl || existingImageUrl ? (
                         <div className="relative mx-auto max-w-xs">
                           <img
-                            src={previewUrl}
+                            src={previewUrl ?? existingImageUrl ?? undefined}
                             alt="Selected product preview"
                             className="h-40 w-full rounded-md object-cover"
                           />
                           <Button
                             type="button"
-                            variant="destructive"
+                            variant="outline"
                             size="icon"
                             className="absolute right-2 top-2"
                             onClick={clearImage}
@@ -250,20 +313,38 @@ export function ProductForm({
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting || categories.length === 0}
-            >
-              {form.formState.isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <ImagePlus /> Add product
-                </>
-              )}
-            </Button>
+            <div className="flex flex-row items-center gap-2">
+              {onEdit ? (
+                <Button variant="outline" onClick={onEditCencel}>
+                  <X/>
+                  Cancel
+                </Button>
+              ) : null}
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting || categories.length === 0
+                }
+              >
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    {!onEdit ? (
+                      <>
+                        <BiPlus /> Add product
+                      </>
+                    ) : (
+                      <>
+                        <BiArrowToTop /> Update product
+                      </>
+                    )}
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

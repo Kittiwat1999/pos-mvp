@@ -1,7 +1,9 @@
 import { ImageOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PosPagination } from "@/components/pos/Pagination"
+
 import {
   Card,
   CardContent,
@@ -13,9 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import type { Category, Product } from "@/features/products";
 import { ProductImage } from "@/components/products/ProductImage";
+import { BiSolidPencil } from "react-icons/bi";
 
 type ProductListProps = {
   products: Product[];
+  pageCount: number;
+  currentPage: number;
   categories: Category[];
   loading: boolean;
   category: string;
@@ -24,10 +29,14 @@ type ProductListProps = {
   onSearchChange: (value: string) => void;
   onRefresh: () => void;
   onToggle: (product: Product) => void;
+  onEdit: (product: Product) => void;
+  onPageChange: (pageId: number) => void;
 };
 
 export function ProductList({
   products,
+  pageCount,
+  currentPage,
   categories,
   loading,
   category,
@@ -36,6 +45,8 @@ export function ProductList({
   onSearchChange,
   onRefresh,
   onToggle,
+  onEdit,
+  onPageChange
 }: ProductListProps) {
   return (
     <Card>
@@ -105,7 +116,11 @@ export function ProductList({
                   >
                     <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
-                        <ProductImage productName={product.name} imageUrl={product.image_url || undefined} imageSize="small" />
+                        <ProductImage
+                          productName={product.name}
+                          imageUrl={product.image_url || undefined}
+                          imageSize="small"
+                        />
                         <span className="font-medium">{product.name}</span>
                       </div>
                     </td>
@@ -116,18 +131,29 @@ export function ProductList({
                       </Badge>
                     </td>
                     <td className="px-3 py-4 text-right">
-                      <Button
-                        variant={product.active ? "secondary" : "default"}
-                        size="sm"
-                        onClick={() => onToggle(product)}
-                      >
-                        {product.active ? "Deactivate" : "Activate"}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
+                          <BiSolidPencil className="mr-1 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant={product.active ? "secondary" : "default"}
+                          size="sm"
+                          onClick={() => onToggle(product)}
+                        >
+                          {product.active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <PosPagination
+              currentPage={currentPage}
+              pageCount={pageCount}
+              setPage={onPageChange}
+            />
           </div>
         )}
       </CardContent>

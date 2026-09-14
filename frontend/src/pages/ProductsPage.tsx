@@ -25,19 +25,22 @@ import { useAuth } from "@/features/auth";
 import ActionConfirmModal from "@/components/common/ActionConfirmModal";
 import { IoMdHome } from "react-icons/io";
 
-
 export default function ProductsPage() {
   const { token } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [categoryName, setCategoryName] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [queryCategory, setQueryCategory] = useState("");
-  const [search, setSearch] = useState("");
+  const [categoryName, setCategoryName] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+  const [queryCategory, setQueryCategory] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState<boolean>(false);
+  const [formOnEdit, setFormOnEdit] = useState<boolean>(false);
+  const [productTotalCount, setProductTotalCount] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
+console.log(currentPage);
   const loadCatalog = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -47,6 +50,8 @@ export default function ProductsPage() {
         listCategories(token),
         listProducts(
           {
+            page: currentPage,
+            display: 10,
             category_id: queryCategory || undefined,
             search: search || undefined,
           },
@@ -54,7 +59,8 @@ export default function ProductsPage() {
         ),
       ]);
       setCategories(nextCategories);
-      setProducts(nextProducts);
+      setProducts(nextProducts.items);
+      setProductTotalCount(nextProducts.total_count)
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Unable to load the catalog",
@@ -62,7 +68,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, queryCategory, search]);
+  }, [token, currentPage, queryCategory, search]);
 
   useEffect(() => {
     void loadCatalog();
@@ -162,13 +168,26 @@ export default function ProductsPage() {
                 categories={categories}
                 token={token}
                 onCreated={(product) =>
-                  setProducts((current) => [...current, product])
+                  setProducts((current) => {
+                    const exists = current.some((item) => item.id === product.id);
+                    return exists
+                      ? current.map((item) => (item.id === product.id ? product : item))
+                      : [...current, product];
+                  })
                 }
+                onEdit={formOnEdit}
+                onEditCencel={() => {
+                  setSelectedProduct(null);
+                  setFormOnEdit(false);
+                }}
+                selectedProduct={selectedProduct}
               />
             ) : null}
           </div>
           <ProductList
             products={products}
+            pageCount={Math.ceil(productTotalCount / 10)}
+            currentPage={currentPage}
             categories={categories}
             loading={loading}
             category={queryCategory}
@@ -184,6 +203,11 @@ export default function ProductsPage() {
                 void handleToggle(product);
               }
             }}
+            onEdit={(product) => {
+              setSelectedProduct(product);
+              setFormOnEdit(true);
+            }}
+            onPageChange={setCurrentPage}
           />
         </div>
       </div>

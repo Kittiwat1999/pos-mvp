@@ -174,6 +174,27 @@ def test_update_product_returns_updated_product():
         print("test_update_product_returns_updated_product: pass")
 
 
+def test_update_product_partial_patch_keeps_existing_fields():
+    with TestClient(app) as client:
+        headers = auth_headers(client)
+        category = create_category(client, headers)
+        product = create_product(client, headers, category["id"])
+
+        response = client.patch(
+            f"/api/v1/products/{product['id']}",
+            headers=headers,
+            data={"price": "75.50"},
+        )
+
+        assert response.status_code == 200
+        updated = response.json()
+        assert updated["price"] == 75.5
+        assert updated["name"] == product["name"]
+        assert updated["category_id"] == category["id"]
+        assert updated["active"] == product["active"]
+        print("test_update_product_partial_patch_keeps_existing_fields: pass")
+
+
 def test_update_product_inventory_returns_updated_product():
     with TestClient(app) as client:
         headers = auth_headers(client)

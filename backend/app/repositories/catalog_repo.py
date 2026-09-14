@@ -1,4 +1,4 @@
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.category import Category
@@ -28,7 +28,7 @@ class ProductRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list(self, active: bool | None = None, category_id: int | None = None, search: str | None = None) -> list[Product]:
+    def list(self, active: bool | None = None, category_id: int | None = None, search: str | None = None, page: int | None = 1, display: int | None = 10,) -> list[Product]:
         statement = select(Product).order_by(Product.name)
         if active is not None:
             statement = statement.where(Product.active == active)
@@ -37,6 +37,7 @@ class ProductRepository:
         if search:
             term = f"%{search.strip()}%"
             statement = statement.where(or_(Product.name.ilike(term), Product.description.ilike(term)))
+        statement = statement.where(Product.id >= (display - 10 * page) + 1).limit(display)
         return list(self.db.scalars(statement).all())
 
     def get(self, product_id: int) -> Product | None:
@@ -46,3 +47,24 @@ class ProductRepository:
         self.db.add(product)
         self.db.flush()
         return product
+
+    def count(
+        self,
+        active: bool | None = None,
+        category_id: int | None = None,
+        search: str | None = None,
+    ) -> int:
+        statement = select(func.count(Product.id))
+
+        if active is not None:
+            statement = statement.where(Product.active == active)
+        if category_id is not None:
+            statement = statement.where(Product.category_id == category_id)
+        if search:
+            term = f"%{search.strip()}%"
+            statement = statement.where(
+                or_(Product.name.ilike(term), Product.description.ilike(term))
+            )
+
+        return int(self.db.scalar(statement) or 0)
+        

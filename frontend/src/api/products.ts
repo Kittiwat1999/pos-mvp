@@ -30,9 +30,16 @@ export type ProductInput = {
 
 export type ProductQuery = {
   active?: boolean;
+  page?: number;
+  display?: number;
   category_id?: string;
   search?: string;
 };
+
+export type ProductListResponse = {
+  items: Product[];
+  total_count: number;
+}
 
 function authHeaders(token?: string): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -44,6 +51,8 @@ function queryString(query: ProductQuery = {}) {
   if (query.active !== undefined) params.set('active', String(query.active));
   if (query.category_id) params.set('category_id', query.category_id);
   if (query.search) params.set('search', query.search);
+  if (query.display) params.set('display', String(query.display))
+  if (query.page) params.set('page', query.page ? "1" : String(query.page))
 
   const value = params.toString();
   return value ? `?${value}` : '';
@@ -78,8 +87,8 @@ export function updateCategory(
   });
 }
 
-export function listProducts(query?: ProductQuery, token?: string): Promise<Product[]> {
-  return apiFetch<Product[]>(`/products${queryString(query)}`, {
+export function listProducts(query?: ProductQuery, token?: string): Promise<ProductListResponse> {
+  return apiFetch<ProductListResponse>(`/products${queryString(query)}`, {
     headers: authHeaders(token),
   });
 }
@@ -111,9 +120,16 @@ export function updateProduct(
   input: Partial<ProductInput>,
   token: string,
 ): Promise<Product> {
+  const form = new FormData();
+  if (input.name !== undefined) form.append('name', input.name);
+  if (input.price !== undefined) form.append('price', String(input.price));
+  if (input.description !== undefined) form.append('description', input.description);
+  if (input.active !== undefined) form.append('active', String(input.active));
+  if (input.image) form.append('image', input.image);
+  if (input.category_id) form.append('category_id', input.category_id);
   return apiFetch<Product>(`/products/${productId}`, {
     method: 'PATCH',
     headers: authHeaders(token),
-    body: JSON.stringify(input),
+    body: form,
   });
 }

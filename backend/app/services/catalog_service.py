@@ -60,6 +60,7 @@ class CatalogService:
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         updates = payload.model_dump(exclude_unset=True)
+        print(f"my product {updates}")
         if "category_id" in updates and not self.categories.get(updates["category_id"]):
             raise HTTPException(status_code=400, detail="Category not found")
         for key, value in updates.items():
@@ -83,3 +84,4 @@ class CatalogService:
             raise HTTPException(status_code=404, detail="Product not found")
         self.db.delete(product)
         _commit(self.db)
+        
