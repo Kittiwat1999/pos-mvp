@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.db.base import Base
 from app.db.session import engine
 from app.models.category import Category
 from app.models.product import Product
@@ -102,7 +101,6 @@ def seed_data(db: Session) -> None:
 
 
 def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
 
     with Session(engine) as db:
         with db.begin():
