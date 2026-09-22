@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, UploadFile, status, Depends
 from app.schemas.storage import UploadedImageOut
 from app.services.storage_service import StorageService
 from app.core.deps import get_current_user
-
+from app.core.config import settings
 router = APIRouter(prefix="/files", tags=["files"])
 
 
@@ -14,7 +14,7 @@ def upload_file(
     file: UploadFile = File(...),
     _: dict = Depends(get_current_user),
 ) -> UploadedImageOut:
-    uploaded = StorageService().upload_image(file)
+    uploaded = StorageService().upload_image(file, settings.PRODUCTS_IMAGE_DIR)
     return UploadedImageOut(filename=uploaded.filename, image_url=uploaded.image_url)
 
 
