@@ -12,6 +12,7 @@ from app.api.v1.orders import router as orders_router
 from app.api.v1.payments import router as payments_router
 from app.api.v1.tables import router as tables_router
 from app.api.v1.storage import router as storage_router
+from app.api.v1.restaurant import router as restaurant_router
 from app.core.config import settings
 from app.db.init_db import init_db
 
@@ -62,7 +63,7 @@ app.include_router(orders_router, prefix="/api/v1")
 app.include_router(payments_router, prefix="/api/v1")
 app.include_router(tables_router, prefix="/api/v1")
 app.include_router(storage_router, prefix="/api/v1")
-
+app.include_router(restaurant_router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check():
