@@ -57,7 +57,9 @@ class Settings:
     MINIO_REGION: str = field(default_factory=lambda: _env("MINIO_REGION", "us-east-1") or "")
     AWS_S3_ENDPOINT_URL: str = field(default_factory=lambda: _env("AWS_S3_ENDPOINT_URL", "http://minio:9000") or "")
     AWS_S3_PUBLIC_URL: str = field(default_factory=lambda: _env("AWS_S3_PUBLIC_URL", "http://localhost:9000") or "")
-
+    PRODUCTS_IMAGE_DIR: str = field(default_factory=lambda: _env("PRODUCTS_IMAGE_DIR", "products") or "")
+    RESTAURANT_IMAGE_DIR: str = field(default_factory=lambda: _env("RESTAURANT_IMAGE_DIR", "restaurants") or "")
+    
     def __post_init__(self) -> None:
         if self.ENVIRONMENT.lower() in {"production", "prod"}:
             if self.DEBUG:

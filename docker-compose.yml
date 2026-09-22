@@ -64,6 +64,8 @@ services:
       MINIO_REGION: ${MINIO_REGION}
       AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL}
       AWS_S3_PUBLIC_URL: ${AWS_S3_PUBLIC_URL:-http://localhost:9000}
+      PRODUCTS_IMAGE_DIR: ${PRODUCTS_IMAGE_DIR}
+      RESTAURANT_IMAGE_DIR: ${RESTAURANT_IMAGE_DIR}
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

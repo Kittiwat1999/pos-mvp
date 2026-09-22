@@ -1,15 +1,60 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.constants import RestaurantSettingKey
 from app.core.security import hash_password
 from app.db.session import engine
 from app.models.category import Category
 from app.models.product import Product
+from app.models.service_types import ServiceType
+from app.models.setting import SettingStr
 from app.models.table import Table
 from app.models.user import User
 
 
 def seed_data(db: Session) -> None:
+    restaurant_settings = {
+        RestaurantSettingKey.NAME: "Baan Coffee House",
+        RestaurantSettingKey.PHONE_NUMBER: "02 123 4567",
+        RestaurantSettingKey.ADDRESS: "18 Sukhumvit 24, Khlong Tan, Bangkok 10110",
+        RestaurantSettingKey.IMAGE_URL: None,
+    }
+
+    for key, value in restaurant_settings.items():
+        setting = db.scalar(select(SettingStr).where(SettingStr.key == key.value))
+
+        if setting is None:
+            db.add(SettingStr(key=key.value, value=value))
+        else:
+            setting.value = value
+
+    service_types = [
+        {
+            "name": "dine-in",
+            "description": "Guests order from their table.",
+            "active": True,
+        },
+        {
+            "name": "takeway",
+            "description": "Guests order for collection.",
+            "active": True,
+        },
+    ]
+
+    for item in service_types:
+        service_type = db.scalar(
+            select(ServiceType).where(ServiceType.name == item["name"])
+        )
+
+        if service_type is None:
+            db.add(
+                ServiceType(
+                    name=item["name"],
+                    description=item["description"],
+                    active=item["active"],
+                )
+            )
+
     categories = {
         "Coffee": "Hot and iced coffee",
         "Food": "Cafe food and snacks",

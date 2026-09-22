@@ -75,7 +75,7 @@ class StorageService:
             )
         return self.build_public_url(filename)
 
-    def upload_image(self, file: UploadFile) -> UploadedImage:
+    def upload_image(self, file: UploadFile, directory: str) -> UploadedImage:
         if not file.filename:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -104,7 +104,7 @@ class StorageService:
                 detail="Failed to process image.",
             ) from exc
 
-        filename = f"uploads/{uuid.uuid4()}.{OUTPUT_EXTENSION}"
+        filename = f"uploads/{directory}/{uuid.uuid4()}.{OUTPUT_EXTENSION}"
 
         try:
             self.client.put_object(
