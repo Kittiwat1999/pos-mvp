@@ -103,7 +103,7 @@ def create_product(
 ):
     image_url: str | None = None
     if image is not None and image.filename:
-        image_url = StorageService().upload_image(image).image_url
+        image_url = StorageService().upload_image(image, settings.PRODUCTS_IMAGE_DIR).image_url
 
     payload = ProductCreate(
         name=name,
@@ -134,7 +134,7 @@ def update_product(
     new_image_url: str | None = None
 
     if image is not None and image.filename:
-        new_image_url = StorageService().upload_image(image).image_url
+        new_image_url = StorageService().upload_image(image, settings.PRODUCTS_IMAGE_DIR).image_url
 
     payload_data = {
         key: value
