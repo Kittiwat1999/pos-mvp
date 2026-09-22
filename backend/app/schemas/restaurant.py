@@ -22,8 +22,8 @@ class ServiceTypeCreate(ServiceTypeBase):
 class ServiceTypeUpdate(ServiceTypeBase):
     id: int | None = None 
     name: str | None = Field(min_length=1, max_length=50)
-    active: bool | None = None
     description: str | None = Field(default=None, max_length=100)
+    active: bool | None = None
     
 class ServiceTypeOut(ServiceTypeBase):
     pass

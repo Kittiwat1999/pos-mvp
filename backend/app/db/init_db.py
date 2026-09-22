@@ -32,12 +32,12 @@ def seed_data(db: Session) -> None:
         {
             "name": "dine-in",
             "description": "Guests order from their table.",
-            "is_active": True,
+            "active": True,
         },
         {
             "name": "takeway",
             "description": "Guests order for collection.",
-            "is_active": True,
+            "active": True,
         },
     ]
 
@@ -51,7 +51,7 @@ def seed_data(db: Session) -> None:
                 ServiceType(
                     name=item["name"],
                     description=item["description"],
-                    is_active=item["is_active"],
+                    active=item["active"],
                 )
             )
 

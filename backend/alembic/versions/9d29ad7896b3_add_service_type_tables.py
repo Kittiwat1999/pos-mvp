@@ -24,7 +24,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=50), nullable=False),
         sa.Column("description", sa.String(length=100), nullable=True),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
+        sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.PrimaryKeyConstraint("id"),
     )
 
