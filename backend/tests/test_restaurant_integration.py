@@ -116,11 +116,9 @@ def test_update_service_type_partial_active_value(active: bool):
         service_type = restaurant.json()["service_types"][0]
 
         response = client.patch(
-            f"/api/v1/serviec_type/{service_type['id']}",
+            f"/api/v1/service_type/{service_type['id']}",
             headers=headers,
             json={
-                "name": service_type["name"],
-                "description": service_type["description"],
                 "active": active,
             },
         )

@@ -10,7 +10,7 @@ const navItems = [
   { name: "Incoming Orders", path: "/incoming-orders" },
   { name: "Products", path: "/products" },
   { name: "Customers", path: "/" },
-  { name: "Settings", path: "/" },
+  { name: "Settings", path: "/settings/restaurant-profile" },
 ];
 
 type StaffSidebarProps = {

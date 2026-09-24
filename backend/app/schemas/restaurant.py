@@ -19,10 +19,16 @@ class ServiceTypeBase(BaseModel):
 class ServiceTypeCreate(ServiceTypeBase):
     pass
 
-class ServiceTypeUpdate(ServiceTypeBase):
-    id: int | None = None 
-    name: str | None = Field(min_length=1, max_length=50)
-    description: str | None = Field(default=None, max_length=100)
+class ServiceTypeUpdate(BaseModel):
+    name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=50,
+    )
+    description: str | None = Field(
+        default=None,
+        max_length=100,
+    )
     active: bool | None = None
     
 class ServiceTypeOut(ServiceTypeBase):

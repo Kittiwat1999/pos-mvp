@@ -1,15 +1,18 @@
-import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Suspense, lazy } from "react";
+import { Route, Routes } from "react-router-dom";
 
-const DashboardPage = lazy(() => import('../pages/DashboardPage'));
-const HomePage = lazy(() => import('../pages/HomePage'));
-const LoginPage = lazy(() => import('../pages/LoginPage'));
-const ProductsPage = lazy(() => import('../pages/ProductsPage'));
-const TablesPage = lazy(() => import('../pages/TablesPage'));
-const OrderingPage = lazy(() => import('../pages/OrderingPage'));
-const OrderStatusPage = lazy(() => import('../pages/OrderStatusPage'));
-const CheckoutPage = lazy(() => import('../pages/CheckoutPage'));
-const IncomingOrdersPage = lazy(() => import('../pages/IncommingOrdersPage'));
+const DashboardPage = lazy(() => import("../pages/DashboardPage"));
+const HomePage = lazy(() => import("../pages/HomePage"));
+const LoginPage = lazy(() => import("../pages/LoginPage"));
+const ProductsPage = lazy(() => import("../pages/ProductsPage"));
+const TablesPage = lazy(() => import("../pages/TablesPage"));
+const OrderingPage = lazy(() => import("../pages/OrderingPage"));
+const OrderStatusPage = lazy(() => import("../pages/OrderStatusPage"));
+const CheckoutPage = lazy(() => import("../pages/CheckoutPage"));
+const IncomingOrdersPage = lazy(() => import("../pages/IncommingOrdersPage"));
+const RestaurantProfilePage = lazy(
+  () => import("../pages/RestaurantProfilePage"),
+);
 
 export default function AppRouter() {
   return (
@@ -21,9 +24,19 @@ export default function AppRouter() {
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/tables" element={<TablesPage />} />
         <Route path="/order/:sessionToken" element={<OrderingPage />} />
-        <Route path="/order/:sessionToken/status" element={<OrderStatusPage />} />
-        <Route path="/order/:sessionToken/checkout" element={<CheckoutPage />} />
+        <Route
+          path="/order/:sessionToken/status"
+          element={<OrderStatusPage />}
+        />
+        <Route
+          path="/order/:sessionToken/checkout"
+          element={<CheckoutPage />}
+        />
         <Route path="/incoming-orders" element={<IncomingOrdersPage />} />
+        <Route
+          path="/settings/restaurant-profile"
+          element={<RestaurantProfilePage />}
+        />
       </Routes>
     </Suspense>
   );

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.core.config import settings
 from app.core.deps import get_current_user
-from app.schemas.restaurant import RestaurantOut, ServiceTypeUpdate, RestaurantUpdate
+from app.schemas.restaurant import RestaurantOut, ServiceTypeUpdate, RestaurantUpdate, ServiceTypeOut
 from app.services.restaurant_services import RestaurantService
 from app.services.storage_service import StorageService
 
@@ -60,7 +60,7 @@ def update_store(
 
     return {"restaurant": updated_restaurant, "service_types": service_types}
     
-@router.patch("/serviec_type/{service_type_id}", response_model = ServiceTypeUpdate)
+@router.patch("/service_type/{service_type_id}", response_model = ServiceTypeOut)
 def update_service_type(service_type_id: int, payload: ServiceTypeUpdate, db: Session = Depends(get_db), _: dict = Depends(get_current_user)):
     print(f"service type id: {service_type_id}")
     return RestaurantService(db).update_service_type(service_type_id, payload)
