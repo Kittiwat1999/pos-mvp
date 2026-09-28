@@ -1,20 +1,30 @@
-import { apiFetch } from './client';
+import { apiFetch } from "./client";
 
-export type TableStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING';
+export type TableStatus = "AVAILABLE" | "OCCUPIED" | "CLEANING";
 
 export type Table = {
-  id: string;
+  id: string | number;
   name: string;
   status: TableStatus;
+  capacity?: number;
+  active?: boolean;
   created_at: string;
   updated_at: string;
 };
+
+export type TableInput = {
+  name: string;
+  capacity: number;
+  active?: boolean;
+};
+
+export type TableUpdate = Partial<TableInput>;
 
 export type TableSession = {
   id: string;
   table_id: string;
   qr_token: string;
-  status: 'OPEN' | 'CLOSED';
+  status: "OPEN" | "CLOSED";
   opened_at: string;
   closed_at: string | null;
 };
@@ -29,29 +39,68 @@ export function listTables(token: string): Promise<Table[]> {
   });
 }
 
+export function createTable(payload: TableInput, token: string): Promise<Table> {
+  return apiFetch<Table>("/tables", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateTable(
+  tableId: string | number,
+  payload: TableUpdate,
+  token: string,
+): Promise<Table> {
+  return apiFetch<Table>(`/tables/${tableId}`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteTable(
+  tableId: string | number,
+  token: string,
+): Promise<void> {
+  return apiFetch<void>(`/tables/${tableId}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export function listTableSessions(token: string): Promise<TableSession[]> {
   return apiFetch<TableSession[]>(`/table-sessions`, {
     headers: authHeaders(token),
   });
 }
 
-export function openTable(tableId: string | number, token: string): Promise<TableSession> {
+export function openTable(
+  tableId: string | number,
+  token: string,
+): Promise<TableSession> {
   return apiFetch<TableSession>(`/tables/${tableId}/open`, {
-    method: 'POST',
+    method: "POST",
     headers: authHeaders(token),
   });
 }
 
-export function closeSession(sessionId: string | number, token: string): Promise<TableSession> {
+export function closeSession(
+  sessionId: string | number,
+  token: string,
+): Promise<TableSession> {
   return apiFetch<TableSession>(`/table-sessions/${sessionId}/close`, {
-    method: 'POST',
+    method: "POST",
     headers: authHeaders(token),
   });
 }
 
-export function markTableCleaned(tableId: string | number, token: string): Promise<Table> {
+export function markTableCleaned(
+  tableId: string | number,
+  token: string,
+): Promise<Table> {
   return apiFetch<Table>(`/tables/${tableId}/clean`, {
-    method: 'POST',
+    method: "POST",
     headers: authHeaders(token),
   });
 }

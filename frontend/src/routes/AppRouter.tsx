@@ -13,6 +13,7 @@ const IncomingOrdersPage = lazy(() => import("../pages/IncommingOrdersPage"));
 const RestaurantProfilePage = lazy(
   () => import("../pages/RestaurantProfilePage"),
 );
+const TableSettingsPage = lazy(() => import("@/pages/TableSettingsPage"));
 
 export default function AppRouter() {
   return (
@@ -37,6 +38,7 @@ export default function AppRouter() {
           path="/settings/restaurant-profile"
           element={<RestaurantProfilePage />}
         />
+        <Route path="/settings/tables" element={<TableSettingsPage />} />
       </Routes>
     </Suspense>
   );
