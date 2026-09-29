@@ -14,9 +14,9 @@ from app.models.user import User
 
 def seed_data(db: Session) -> None:
     restaurant_settings = {
-        RestaurantSettingKey.NAME: "Baan Coffee House",
+        RestaurantSettingKey.NAME: "Coffee House",
         RestaurantSettingKey.PHONE_NUMBER: "02 123 4567",
-        RestaurantSettingKey.ADDRESS: "18 Sukhumvit 24, Khlong Tan, Bangkok 10110",
+        RestaurantSettingKey.ADDRESS: "Roi-et, Thailand",
         RestaurantSettingKey.IMAGE_URL: None,
     }
 
@@ -136,14 +136,21 @@ def seed_data(db: Session) -> None:
                 )
             )
 
-    for table_name in ("Table 1", "Table 2", "Table 3"):
-        table = db.scalar(
-            select(Table).where(Table.name == table_name)
+    table_names = [f"Table {number}" for number in range(1, 21)]
+    existing_names = set(
+        db.scalars(select(Table.name).where(Table.name.in_(table_names)))
+    )
+    new_tables = [
+        Table(
+            name=name,
+            status="AVAILABLE",
+            capacity=4,
+            active=True,
         )
-
-        if table is None:
-            db.add(Table(name=table_name, status="AVAILABLE"))
-
+        for name in table_names
+        if name not in existing_names
+    ]
+    db.add_all(new_tables)
 
 def init_db() -> None:
 

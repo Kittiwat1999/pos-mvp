@@ -35,7 +35,7 @@ def create_order_setup(client: TestClient, headers: dict[str, str]) -> dict:
     table = client.post(
         "/api/v1/tables",
         headers=headers,
-        json={"name": f"Order Table {uuid4().hex[:10]}"},
+        json={"name": f"Order Table {uuid4().hex[:10]}", "capacity": 4},
     )
     assert table.status_code == 201
 
@@ -130,7 +130,7 @@ def test_list_pending_orders_requires_authentication_and_returns_pending_orders(
             f"/api/v1/table-sessions/{setup['session_id']}/orders",
             json={"items": [{"product_id": setup["product_id"], "quantity": 1}]},
         )
-        response = client.get("/api/v1/orders", headers=headers, params={"status": "pending"})
+        response = client.get("/api/v1/orders", headers=headers, params={"status": "PENDING"})
 
         assert created.status_code == 201
         assert response.status_code == 200

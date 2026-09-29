@@ -110,7 +110,7 @@ def test_list_products_filters_by_category_search_and_active_state():
         )
 
         assert response.status_code == 200
-        assert [item["id"] for item in response.json()] == [product["id"]]
+        assert [item["id"] for item in response.json()["items"]] == [product["id"]]
         print("test_list_products_filters_by_category_search_and_active_state: pass")
 
 
@@ -165,7 +165,7 @@ def test_update_product_returns_updated_product():
         response = client.patch(
             f"/api/v1/products/{product['id']}",
             headers=headers,
-            json={"price": "75.50", "active": False},
+            data={"price": "75.50", "active": "false"},
         )
 
         assert response.status_code == 200
