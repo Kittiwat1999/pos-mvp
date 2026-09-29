@@ -1,19 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { canTransitionTableStatus, type TableStatus } from '../features/tables';
+import { type ManagedTable } from '@/components/tables';
 
-export type Table = {
-  id: string;
-  name: string;
-  status: TableStatus;
-  session?: {
-    id?: string | number;
-    token?: string;
-    openedAt?: string;
-  } | null;
-};
-
-export function useTable(initialTable: Table | null) {
-  const [table, setTable] = useState<Table | null>(initialTable);
+export function useTable(initialTable: ManagedTable | null) {
+  const [table, setTable] = useState<ManagedTable | null>(initialTable);
 
   useEffect(() => {
     setTable(initialTable);

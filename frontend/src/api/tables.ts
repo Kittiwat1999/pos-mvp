@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
 export type TableStatus = "AVAILABLE" | "OCCUPIED" | "CLEANING";
-
+export type ActiveFilter = "" | "true" | "false";
 export type Table = {
   id: string | number;
   name: string;
@@ -12,6 +12,11 @@ export type Table = {
   updated_at: string;
 };
 
+export type TableListResponse = {
+  tables: Table[];
+  total_count: number;
+}
+
 export type TableInput = {
   name: string;
   capacity: number;
@@ -21,7 +26,7 @@ export type TableInput = {
 export type TableUpdate = Partial<TableInput>;
 
 export type TableSession = {
-  id: string;
+  id: string | number;
   table_id: string;
   qr_token: string;
   status: "OPEN" | "CLOSED";
@@ -29,12 +34,38 @@ export type TableSession = {
   closed_at: string | null;
 };
 
+type queryTable = {
+  search?: string;
+  active?: ActiveFilter;
+  page?: number;
+  limit?: number;
+}
+
+
+function queryString(query: queryTable = {}) {
+  const params = new URLSearchParams();
+  const queryParams = {
+    search: query.search,
+    active: query.active,
+    page: query.page ?? 1,
+    limit: query.limit ?? 10,
+  };
+
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      params.set(key, String(value));
+    }
+  });
+
+  return `?${params.toString()}`;
+}
+
 function authHeaders(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}` };
 }
 
-export function listTables(token: string): Promise<Table[]> {
-  return apiFetch<Table[]>(`/tables`, {
+export function listTables(query: queryTable, token: string): Promise<TableListResponse> {
+  return apiFetch<TableListResponse>(`/tables${queryString(query)}`, {
     headers: authHeaders(token),
   });
 }

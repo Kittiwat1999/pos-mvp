@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.table import Table, TableSession
 from app.repositories.table_repo import TableRepository, TableSessionRepository
-from app.schemas.table import TableCreate
+from app.schemas.table import TableCreate, TableUpdate
 
 
 def _commit(db: Session) -> None:
@@ -24,15 +24,29 @@ class TableService:
         self.tables = TableRepository(db)
         self.sessions = TableSessionRepository(db)
 
-    def list_tables(self) -> list[Table]:
-        return self.tables.list()
-
+    def list_tables(self, search: str | None = None, status: str | None = None, active: bool | None = None, page: int | None = None, limit:int | None = None) -> list[Table]:
+        return self.tables.list(search, status, active, page, limit)
+    
+    def table_count(self, search: str | None = None, status: str | None = None, active: bool | None = None) -> int:
+        return self.tables.count(search, status, active)
+    
     def create_table(self, payload: TableCreate) -> Table:
-        table = self.tables.create(Table(name=payload.name.strip()))
+        table = self.tables.create(Table(name=payload.name.strip(), capacity=payload.capacity))
         _commit(self.db)
         self.db.refresh(table)
         return table
 
+    def update_table(self, table_id:int, payload: TableUpdate) -> Table:
+        table = self.tables.get(table_id,for_update=True)
+        if not table:
+            raise HTTPException(status_code=404, detail="Table not found")
+        updates = payload.model_dump(exclude_unset=True)
+        for key, value in updates.items():
+            setattr(table, key, value)
+        _commit(self.db)
+        self.db.refresh(table)
+        return table
+    
     def open_table(self, table_id: int) -> TableSession:
         table = self.tables.get(table_id, for_update=True)
         if not table:

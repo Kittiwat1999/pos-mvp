@@ -3,7 +3,7 @@ export {
   canTransitionTableStatus,
 } from './tableStatus';
 export type { TableStatus } from './tableStatus';
-export type { Table, TableInput, TableSession, TableUpdate } from '../../api/tables';
+export type { Table, TableInput, TableSession, TableUpdate, ActiveFilter} from '../../api/tables';
 export {
   closeSession,
   createTable,

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +9,8 @@ import { toast } from "sonner";
 import ActionConfirmModal from "@/components/common/ActionConfirmModal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -30,9 +32,11 @@ import {
   updateTable,
   type Table,
   type TableSession,
+  type ActiveFilter,
 } from "@/features/tables";
 import { useAuth } from "@/features/auth";
 import SettingsSidebar from "@/components/layout/SettingsSidebar";
+import { cn } from "@/lib/utils";
 
 const tableFormSchema = z.object({
   name: z
@@ -48,7 +52,6 @@ const tableFormSchema = z.object({
 
 type TableFormInput = z.input<typeof tableFormSchema>;
 type TableFormValues = z.output<typeof tableFormSchema>;
-type ActiveFilter = "" | "true" | "false";
 
 const statusStyle: Record<
   Table["status"],
@@ -79,6 +82,7 @@ export default function TableSettingsPage() {
 
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [tables, setTables] = useState<Table[]>([]);
+  const [tableTotalCount, setTableTotalCount] = useState<number>(0);
   const [sessions, setSessions] = useState<TableSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,21 +103,20 @@ export default function TableSettingsPage() {
     setLoading(true);
     setError("");
     try {
-      const [nextTables, nextSessions] = await Promise.all([
-        listTables(token),
+      const [tableResponse, nextSessions] = await Promise.all([
+        listTables(
+          {
+            search: searchQuery,
+            active: activeFilter,
+            page: page,
+            limit: limit,
+          },
+          token,
+        ),
         listTableSessions(token),
       ]);
-      setTables((current) =>
-        nextTables.map((table) => {
-          const existing = current.find((item) => item.id === table.id);
-          return {
-            ...existing,
-            ...table,
-            capacity: table.capacity ?? existing?.capacity ?? 4,
-            active: table.active ?? existing?.active ?? true,
-          };
-        }),
-      );
+      setTables(tableResponse.tables);
+      setTableTotalCount(tableResponse.total_count);
       setSessions(nextSessions);
     } catch (cause) {
       setError(
@@ -126,7 +129,7 @@ export default function TableSettingsPage() {
 
   useEffect(() => {
     void loadTables();
-  }, [token]);
+  }, [token, searchParams]);
 
   useEffect(() => {
     setSearchInput(searchQuery);
@@ -149,28 +152,14 @@ export default function TableSettingsPage() {
     return () => window.clearTimeout(timeout);
   }, [searchInput, searchQuery, setSearchParams]);
 
-  const filteredTables = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
-    return tables.filter((table) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        table.name.toLocaleLowerCase().includes(normalizedSearch);
-      const isActive = table.active !== false;
-      const matchesActive =
-        activeFilter === "" || String(isActive) === activeFilter;
-      return matchesSearch && matchesActive;
-    });
-  }, [tables, searchQuery, activeFilter]);
-
-  const pageCount = Math.max(1, Math.ceil(filteredTables.length / limit));
+  const pageCount = Math.max(1, Math.ceil(tableTotalCount / limit));
   const pageStart = Math.max(1, Math.min(page - 2, pageCount - 4));
   const pageNumbers = Array.from(
     { length: Math.min(pageCount, 5) },
     (_, index) => pageStart + index,
   );
-  const visibleTables = filteredTables.slice((page - 1) * limit, page * limit);
-  const firstItem = filteredTables.length === 0 ? 0 : (page - 1) * limit + 1;
-  const lastItem = Math.min(page * limit, filteredTables.length);
+  const firstItem = tableTotalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const lastItem = Math.min(page * limit, tableTotalCount);
 
   useEffect(() => {
     if (page > pageCount) {
@@ -327,6 +316,16 @@ export default function TableSettingsPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "link", size: "sm" }),
+                "mb-3 -ml-2",
+              )}
+              to="/dashboard"
+            >
+              <ArrowLeft />
+              Back to dashboard
+            </Link>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
               Settings
             </p>
@@ -429,19 +428,19 @@ export default function TableSettingsPage() {
                           Loading tables...
                         </td>
                       </tr>
-                    ) : error ? null : visibleTables.length === 0 ? (
+                    ) : error ? null : tables.length === 0 ? (
                       <tr>
                         <td
                           colSpan={5}
                           className="px-5 py-12 text-center text-muted-foreground"
                         >
-                          {filteredTables.length === 0
+                          {tableTotalCount === 0
                             ? "No tables found."
                             : "No tables on this page."}
                         </td>
                       </tr>
                     ) : (
-                      visibleTables.map((table) => {
+                      tables.map((table) => {
                         const active = table.active !== false;
                         const status = statusStyle[table.status];
                         return (
@@ -507,8 +506,7 @@ export default function TableSettingsPage() {
 
               <div className="flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {firstItem}–{lastItem} of {filteredTables.length}{" "}
-                  tables
+                  Showing {firstItem}–{lastItem} of {tableTotalCount} tables
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="flex items-center gap-2 text-sm text-muted-foreground">
