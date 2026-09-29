@@ -37,7 +37,7 @@ def create_qr_setup(client: TestClient, headers: dict[str, str]) -> dict:
     table = client.post(
         "/api/v1/tables",
         headers=headers,
-        json={"name": f"QR Table {uuid4().hex[:10]}"},
+        json={"name": f"QR Table {uuid4().hex[:10]}", "capacity": 4},
     )
     assert table.status_code == 201
 

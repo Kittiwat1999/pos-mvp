@@ -34,7 +34,7 @@ def create_checkout_setup(client: TestClient, headers: dict[str, str], with_orde
     table = client.post(
         "/api/v1/tables",
         headers=headers,
-        json={"name": f"Payment Table {uuid4().hex[:10]}"},
+        json={"name": f"Payment Table {uuid4().hex[:10]}", "capacity": 4},
     )
     assert table.status_code == 201
     session = client.post(f"/api/v1/tables/{table.json()['id']}/open", headers=headers)
