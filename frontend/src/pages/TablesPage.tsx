@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { Search, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useAuth } from "@/features/auth";
 import {
   closeSession,
@@ -17,7 +20,7 @@ import {
   markTableCleaned,
   openTable,
   listTableSessions,
-  type Table,
+  type TableStatus,
   type TableSession,
 } from "@/features/tables";
 import { useTable } from "@/hooks/useTable";
@@ -31,9 +34,34 @@ const statusVariant = {
   CLEANING: "warning",
 } as const;
 
+const tableStatuses: { value: TableStatus | ""; label: string }[] = [
+  { value: "", label: "All statuses" },
+  { value: "AVAILABLE", label: "Available" },
+  { value: "OCCUPIED", label: "Occupied" },
+  { value: "CLEANING", label: "Cleaning" },
+];
+
+function readPositiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export default function TablesPage() {
   const { token } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") ?? "";
+  const statusParam = searchParams.get("status");
+  const statusFilter: TableStatus | "" =
+    statusParam === "AVAILABLE" ||
+    statusParam === "OCCUPIED" ||
+    statusParam === "CLEANING"
+      ? statusParam
+      : "";
+  const page = readPositiveInteger(searchParams.get("page"), 1);
+  const limit = readPositiveInteger(searchParams.get("limit"), 12);
+  const [searchInput, setSearchInput] = useState(searchQuery);
   const [tables, setTables] = useState<ManagedTable[]>([]);
+  const [tableTotalCount, setTableTotalCount] = useState(0);
   const [tableSessions, setTableSessions] = useState<
     Record<string, TableSession>
   >({});
@@ -132,10 +160,14 @@ export default function TablesPage() {
     setError("");
 
     try {
-      const nextTables = await listTables(token);
+      const tablesResponse = await listTables(
+        { search: searchQuery, status: statusFilter, page, limit },
+        token,
+      );
       const nextSessions = await listTableSessions(token);
+      setTableTotalCount(tablesResponse.total_count);
       setTables(
-        nextTables.map((table) => ({
+        tablesResponse.tables.map((table) => ({
           id: String(table.id),
           name: table.name,
           status: table.status,
@@ -155,7 +187,7 @@ export default function TablesPage() {
       );
 
       setSelectedTableId((current) =>
-        current && nextTables.some((table) => String(table.id) === current)
+        current && tablesResponse.tables.some((table) => String(table.id) === current)
           ? current
           : null,
       );
@@ -170,7 +202,79 @@ export default function TablesPage() {
 
   useEffect(() => {
     void loadTables();
-  }, [token]);
+  }, [token, searchParams]);
+
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (searchInput.trim() === searchQuery) return;
+    const timeout = window.setTimeout(() => {
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (searchInput.trim()) next.set("search", searchInput.trim());
+          else next.delete("search");
+          next.delete("page");
+          return next;
+        },
+        { replace: true },
+      );
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchInput, searchQuery, setSearchParams]);
+
+  const pageCount = Math.max(1, Math.ceil(tableTotalCount / limit));
+  const pageStart = Math.max(1, Math.min(page - 2, pageCount - 4));
+  const pageNumbers = Array.from(
+    { length: Math.min(pageCount, 5) },
+    (_, index) => pageStart + index,
+  );
+  const firstItem = tableTotalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const lastItem = Math.min(page * limit, tableTotalCount);
+
+  useEffect(() => {
+    if (page > pageCount) {
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (pageCount === 1) next.delete("page");
+          else next.set("page", String(pageCount));
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [page, pageCount, setSearchParams]);
+
+  const setPage = (nextPage: number) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (nextPage <= 1) next.delete("page");
+      else next.set("page", String(nextPage));
+      return next;
+    });
+  };
+
+  const setStatusFilter = (value: TableStatus | "") => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value) next.set("status", value);
+      else next.delete("status");
+      next.delete("page");
+      return next;
+    });
+  };
+
+  const setPageSize = (value: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("limit", value);
+      next.delete("page");
+      return next;
+    });
+  };
 
   const handleOpenTable = async (table: ManagedTable) => {
     if (!token) return;
@@ -313,19 +417,56 @@ export default function TablesPage() {
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-          <Card className="w-full">
-            <CardHeader>
+          <Card className="w-full min-w-0">
+            <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Table grid</CardTitle>
-              <CardDescription>
-                {loading
-                  ? "Loading tables..."
-                  : `${tables.filter((table) => table.status === "AVAILABLE").length} available · ${tables.filter((table) => table.status === "OCCUPIED").length} occupied · ${tables.filter((table) => table.status === "CLEANING").length} cleaning`}
-              </CardDescription>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative min-w-0 sm:w-64">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchInput}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    placeholder="Search table name"
+                    aria-label="Search table name"
+                    className="pl-9 pr-9"
+                  />
+                  {searchInput ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Clear search"
+                      className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
+                      onClick={() => setSearchInput("")}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
+                <Select
+                  aria-label="Filter by table status"
+                  value={statusFilter}
+                  onChange={(event) =>
+                    setStatusFilter(event.target.value as TableStatus | "")
+                  }
+                  className="sm:w-40"
+                >
+                  {tableStatuses.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <p className="py-8 text-center text-muted-foreground">
                   Loading tables...
+                </p>
+              ) : tables.length === 0 ? (
+                <p className="py-8 text-center text-muted-foreground">
+                  No tables found.
                 </p>
               ) : (
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -334,7 +475,7 @@ export default function TablesPage() {
                       key={table.id}
                       type="button"
                       className={`rounded-xl border p-4 text-left transition hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedTableId === table.id ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
-                      onClick={() => handleSelectTable(table.id)}
+                      onClick={() => handleSelectTable(table.id.toString())}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-semibold">
@@ -355,6 +496,60 @@ export default function TablesPage() {
                   ))}
                 </div>
               )}
+              {!loading ? (
+                <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {firstItem}–{lastItem} of {tableTotalCount} tables
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="mr-1 flex items-center gap-2 text-sm text-muted-foreground">
+                      Rows
+                      <Select
+                        aria-label="Rows per page"
+                        value={String(limit)}
+                        onChange={(event) => setPageSize(event.target.value)}
+                        className="w-20"
+                      >
+                        {[12, 24, 48].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </Select>
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage(page - 1)}
+                    >
+                      Previous
+                    </Button>
+                    {pageNumbers.map((pageNumber) => (
+                      <Button
+                        key={pageNumber}
+                        type="button"
+                        variant={page === pageNumber ? "secondary" : "ghost"}
+                        size="sm"
+                        aria-current={page === pageNumber ? "page" : undefined}
+                        onClick={() => setPage(pageNumber)}
+                      >
+                        {pageNumber}
+                      </Button>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= pageCount}
+                      onClick={() => setPage(page + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
