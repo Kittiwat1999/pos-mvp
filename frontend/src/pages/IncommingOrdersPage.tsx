@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -15,7 +16,7 @@ import { useCallback, useState } from "react";
 import { IncomingOrder } from "@/components/order/IncomingOrder";
 import { usePolling } from "@/hooks/usePolling";
 import { toast } from "sonner";
-import { IoMdHome } from "react-icons/io";
+import { cn } from "@/lib/utils";
 
 
 const statusVariant: Record<
@@ -84,6 +85,16 @@ export default function IncommingOrdersPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "link", size: "sm" }),
+                "mb-3 -ml-2",
+              )}
+              to="/dashboard"
+            >
+              <ArrowLeft />
+              Back to dashboard
+            </Link>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
               POS
             </p>
@@ -92,13 +103,6 @@ export default function IncommingOrdersPage() {
               Review and manage orders submitted from your tables.
             </p>
           </div>
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            to="/dashboard"
-          >
-            <IoMdHome/>
-            Back To Dashboard
-          </Link>
         </div>
 
         <div className="space-y-4 mb-4">

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { useAuth } from "@/features/auth";
 import { usePolling } from "@/hooks/usePolling";
 import { useQrSession } from "@/hooks/useQrSession";
 import { OrderRound } from "@/components/order/OrderRound";
-import { IoMdHome } from "react-icons/io";
+import { cn } from "@/lib/utils";
 
 
 export default function OrderStatusPage() {
@@ -46,6 +47,18 @@ export default function OrderStatusPage() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            {token ? (
+              <Link
+                className={cn(
+                  buttonVariants({ variant: "link", size: "sm" }),
+                  "mb-3 -ml-2",
+                )}
+                to="/dashboard"
+              >
+                <ArrowLeft />
+                Back to dashboard
+              </Link>
+            ) : null}
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
               Order status
             </p>
@@ -72,12 +85,6 @@ export default function OrderStatusPage() {
               Order more
             </Link>
 
-            {token ? (
-              <Link className={buttonVariants({ variant: "outline" })} to="/dashboard">
-                <IoMdHome/>
-                Back To Dashboard
-              </Link>
-            ) : null}
           </div>
         </div>
 

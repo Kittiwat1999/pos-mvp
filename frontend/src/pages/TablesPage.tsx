@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, X } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
 } from "@/features/tables";
 import { useTable } from "@/hooks/useTable";
 import { TableActionContent, type ManagedTable } from "@/components/tables";
-import { IoMdHome } from "react-icons/io";
+import { cn } from "@/lib/utils";
 
 
 const statusVariant = {
@@ -393,6 +393,16 @@ export default function TablesPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "link", size: "sm" }),
+                "mb-3 -ml-2",
+              )}
+              to="/dashboard"
+            >
+              <ArrowLeft />
+              Back to dashboard
+            </Link>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
               POS
             </p>
@@ -401,13 +411,6 @@ export default function TablesPage() {
               Open a table session, share its QR link, and manage checkout.
             </p>
           </div>
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            to="/dashboard"
-          >
-            <IoMdHome/>
-            Back To Dashboard
-          </Link>
         </div>
 
         {error ? (
