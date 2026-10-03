@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useQrSession } from "@/hooks/useQrSession";
 import { toast } from "sonner";
 import { ProductImage } from "@/components/products/ProductImage";
-import { IoMdHome } from "react-icons/io";
+import { cn } from "@/lib/utils";
 
 type CartLine = CreateOrderItemInput & {
   name: string;
@@ -249,6 +250,19 @@ export default function OrderingPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
+            {authToken ? (
+              <Link
+                className={cn(
+                  buttonVariants({ variant: "link", size: "sm" }),
+                  "mb-3 -ml-2",
+                )}
+                to="/dashboard"
+                aria-label="Back to dashboard"
+              >
+                <ArrowLeft />
+                Back to dashboard
+              </Link>
+            ) : null}
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
               Menu
             </p>
@@ -271,15 +285,6 @@ export default function OrderingPage() {
                   to="/tables"
                 >
                   Back To Tables
-                </Link>
-
-                <Link
-                  className={buttonVariants({ variant: "outline" })}
-                  to="/dashboard"
-                  aria-label="Home"
-                >
-                  <IoMdHome />
-                  Back To Dashboard
                 </Link>
               </>
             ) : null}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
 } from "@/features/products";
 import { useAuth } from "@/features/auth";
 import ActionConfirmModal from "@/components/common/ActionConfirmModal";
-import { IoMdHome } from "react-icons/io";
+import { cn } from "@/lib/utils";
 
 export default function ProductsPage() {
   const { token } = useAuth();
@@ -119,6 +120,16 @@ export default function ProductsPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "link", size: "sm" }),
+                "mb-3 -ml-2",
+              )}
+              to="/dashboard"
+            >
+              <ArrowLeft />
+              Back to dashboard
+            </Link>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
               Catalog
             </p>
@@ -127,13 +138,6 @@ export default function ProductsPage() {
               Manage the active menu used by POS and QR ordering.
             </p>
           </div>
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            to="/dashboard"
-          >
-            <IoMdHome />
-            Back To Dashboard
-          </Link>
         </div>
         {error ? (
           <Alert variant="destructive" className="mb-6">
