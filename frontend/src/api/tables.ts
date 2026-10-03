@@ -36,6 +36,7 @@ export type TableSession = {
 
 type queryTable = {
   search?: string;
+  status?: TableStatus | "";
   active?: ActiveFilter;
   page?: number;
   limit?: number;
@@ -46,6 +47,7 @@ function queryString(query: queryTable = {}) {
   const params = new URLSearchParams();
   const queryParams = {
     search: query.search,
+    status: query.status,
     active: query.active,
     page: query.page ?? 1,
     limit: query.limit ?? 10,
