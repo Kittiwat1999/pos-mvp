@@ -84,11 +84,11 @@ services:
       - .env
     environment:
       CI: "true"
-      API_BASE_URL: ${API_BASE_URL}
-      APP_BASE_URL: ${APP_BASE_URL}
-      API_PREFIX: ${API_PREFIX}
-      AUTH_STORAGE_KEY: ${AUTH_STORAGE_KEY}
-      ORDER_POLLING_INTERVAL_MS: ${ORDER_POLLING_INTERVAL_MS}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_APP_BASE_URL: ${VITE_APP_BASE_URL}
+      VITE_API_PREFIX: ${VITE_API_PREFIX}
+      VITE_AUTH_STORAGE_KEY: ${VITE_AUTH_STORAGE_KEY}
+      VITE_ORDER_POLLING_INTERVAL_MS: ${VITE_ORDER_POLLING_INTERVAL_MS}
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
