@@ -4,9 +4,11 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from PIL import Image
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.main import app
+from app.models.product import Product
 
 
 def _png_bytes(
@@ -47,7 +49,7 @@ def test_upload_image_returns_public_url_and_filename():
         assert metadata.json()["image_url"] == data["image_url"]
 
 
-def test_create_product_with_image_stores_image_url():
+def test_create_product_with_image_stores_filename_and_returns_public_url():
     with TestClient(app) as client:
         headers = _login(client)
 
@@ -75,6 +77,19 @@ def test_create_product_with_image_stores_image_url():
         assert product["image_url"] is not None
         assert "/uploads/" in product["image_url"]
         assert product["image_url"].endswith(".webp")
+
+        with Session(bind=app.state.test_db_connection) as db:
+            stored_product = db.get(Product, product["id"])
+            assert stored_product is not None
+            assert stored_product.image_url.startswith("uploads/")
+            assert not stored_product.image_url.startswith(("http://", "https://"))
+
+        listed_products = client.get("/api/v1/products").json()["items"]
+        listed_product = next(item for item in listed_products if item["id"] == product["id"])
+        assert listed_product["image_url"] == product["image_url"]
+
+        fetched_product = client.get(f"/api/v1/products/{product['id']}").json()
+        assert fetched_product["image_url"] == product["image_url"]
 
 
 def test_delete_image_returns_204():
@@ -130,7 +145,7 @@ def test_delete_product_with_image_cleans_up_storage_file():
         assert client.get(f"/api/v1/products/{product['id']}").status_code == 404
 
 
-def test_update_product_with_image_stores_image_url():
+def test_update_product_with_image_stores_filename_and_returns_public_url():
     with TestClient(app) as client:
         headers = _login(client)
 

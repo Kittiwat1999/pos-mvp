@@ -12,7 +12,7 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_storage_service
 from app.core.config import settings
 from app.core.deps import get_current_user
 from app.schemas.catalog import (
@@ -27,7 +27,6 @@ from app.schemas.catalog import (
 )
 from app.services.catalog_service import CatalogService
 from app.services.storage_service import StorageService
-from app.core.config import settings
 
 router = APIRouter(tags=["catalog"])
 
@@ -73,18 +72,21 @@ def list_products(
     page: int | None = Query(default=1),
     display: int | None = Query(default=10),
     db: Session = Depends(get_db),
+    storage_service: StorageService = Depends(get_storage_service),
 ):
-    products = CatalogService(db).products.list(active, category_id, search, page, display)
-    products_count = CatalogService(db).products.count(active, category_id, search)
+    catalog = CatalogService(db, storage_service)
+    products = catalog.list_products(active, category_id, search, page, display)
+    products_count = catalog.products.count(active, category_id, search)
     return {"items": products, "total_count": products_count}
 
 
 @router.get("/products/{product_id}", response_model=ProductOut)
-def get_product(product_id: int, db: Session = Depends(get_db)):
-    product = CatalogService(db).products.get(product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    return product
+def get_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    return CatalogService(db, storage_service).get_product(product_id)
 
 
 @router.post(
@@ -99,11 +101,14 @@ def create_product(
     stock_quantity: int = Form(default=0, ge=0),
     image: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
+    storage_service: StorageService = Depends(get_storage_service),
     _: dict = Depends(get_current_user),
 ):
-    image_url: str | None = None
+    image_filename: str | None = None
     if image is not None and image.filename:
-        image_url = StorageService().upload_image(image, settings.PRODUCTS_IMAGE_DIR).image_url
+        image_filename = storage_service.upload_image(
+            image, settings.PRODUCTS_IMAGE_DIR
+        ).filename
 
     payload = ProductCreate(
         name=name,
@@ -112,9 +117,9 @@ def create_product(
         description=description,
         active=active,
         stock_quantity=stock_quantity,
-        image_url=image_url,
+        image_url=image_filename,
     )
-    return CatalogService(db).create_product(payload)
+    return CatalogService(db, storage_service).create_product(payload)
 
 
 @router.patch("/products/{product_id}", response_model=ProductOut)
@@ -128,13 +133,20 @@ def update_product(
     stock_quantity: int | None = Form(default=None, ge=0),
     image: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
+    storage_service: StorageService = Depends(get_storage_service),
     _: dict = Depends(get_current_user),
 ):
-    old_image_url = CatalogService(db).products.get(product_id).image_url
-    new_image_url: str | None = None
+    catalog = CatalogService(db, storage_service)
+    existing_product = catalog.products.get(product_id)
+    if not existing_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    old_image_reference = existing_product.image_url
+    new_image_filename: str | None = None
 
     if image is not None and image.filename:
-        new_image_url = StorageService().upload_image(image, settings.PRODUCTS_IMAGE_DIR).image_url
+        new_image_filename = storage_service.upload_image(
+            image, settings.PRODUCTS_IMAGE_DIR
+        ).filename
 
     payload_data = {
         key: value
@@ -145,17 +157,18 @@ def update_product(
             "description": description,
             "active": active,
             "stock_quantity": stock_quantity,
-            "image_url": new_image_url,
+            "image_url": new_image_filename,
         }.items()
         if value is not None
     }
 
     payload = ProductUpdate(**payload_data)
-    updated_product = CatalogService(db).update_product(product_id, payload)
+    updated_product = catalog.update_product(product_id, payload)
 
-    if old_image_url and new_image_url and old_image_url != new_image_url:
-        old_filename = old_image_url.rsplit(f"/{settings.MINIO_BUCKET}/", 1)[-1]
-        StorageService().delete_file(old_filename)
+    if old_image_reference and new_image_filename:
+        old_filename = _stored_filename(old_image_reference)
+        if old_filename != new_image_filename:
+            storage_service.delete_file(old_filename)
 
     return updated_product
 
@@ -164,20 +177,32 @@ def update_inventory(
     product_id: int,
     payload: InventoryUpdate,
     db: Session = Depends(get_db),
+    storage_service: StorageService = Depends(get_storage_service),
     _: dict = Depends(get_current_user),
 ):
-    return CatalogService(db).update_inventory(product_id, payload)
+    return CatalogService(db, storage_service).update_inventory(product_id, payload)
 
 
 @router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(
-    product_id: int, db: Session = Depends(get_db), _: dict = Depends(get_current_user)
+    product_id: int,
+    db: Session = Depends(get_db),
+    storage_service: StorageService = Depends(get_storage_service),
+    _: dict = Depends(get_current_user),
 ):
-    product = CatalogService(db).products.get(product_id)
-    image_url = product.image_url
-    
-    if image_url:
-        file_name = image_url.rsplit(f"/{settings.MINIO_BUCKET}/", 1)[-1]
-        StorageService().delete_file(file_name)
-        
+    catalog = CatalogService(db, storage_service)
+    product = catalog.products.get(product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if product.image_url:
+        storage_service.delete_file(_stored_filename(product.image_url))
+
     CatalogService(db).delete_product(product_id)
+
+
+def _stored_filename(image_reference: str) -> str:
+    if image_reference.startswith(("http://", "https://")):
+        bucket_marker = f"/{settings.MINIO_BUCKET}/"
+        if bucket_marker in image_reference:
+            return image_reference.rsplit(bucket_marker, 1)[-1]
+    return image_reference
