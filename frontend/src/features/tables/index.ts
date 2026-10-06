@@ -9,6 +9,7 @@ export {
   createTable,
   deleteTable,
   listTables,
+  settingListTables,
   listTableSessions,
   markTableCleaned,
   openTable,
