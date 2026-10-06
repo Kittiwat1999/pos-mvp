@@ -72,8 +72,14 @@ export function listTables(query: queryTable, token: string): Promise<TableListR
   });
 }
 
+export function settingListTables(query: queryTable, token: string): Promise<TableListResponse> {
+  return apiFetch<TableListResponse>(`/settings/tables${queryString(query)}`, {
+    headers: authHeaders(token),
+  });
+}
+
 export function createTable(payload: TableInput, token: string): Promise<Table> {
-  return apiFetch<Table>("/tables", {
+  return apiFetch<Table>("/settings/tables", {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify(payload),
@@ -85,7 +91,7 @@ export function updateTable(
   payload: TableUpdate,
   token: string,
 ): Promise<Table> {
-  return apiFetch<Table>(`/tables/${tableId}`, {
+  return apiFetch<Table>(`/settings/tables/${tableId}`, {
     method: "PATCH",
     headers: authHeaders(token),
     body: JSON.stringify(payload),
@@ -96,7 +102,7 @@ export function deleteTable(
   tableId: string | number,
   token: string,
 ): Promise<void> {
-  return apiFetch<void>(`/tables/${tableId}`, {
+  return apiFetch<void>(`/settings/tables/${tableId}`, {
     method: "DELETE",
     headers: authHeaders(token),
   });

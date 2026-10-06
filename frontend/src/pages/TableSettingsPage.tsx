@@ -28,7 +28,7 @@ import {
   createTable,
   deleteTable,
   listTableSessions,
-  listTables,
+  settingListTables,
   updateTable,
   type Table,
   type TableSession,
@@ -104,7 +104,7 @@ export default function TableSettingsPage() {
     setError("");
     try {
       const [tableResponse, nextSessions] = await Promise.all([
-        listTables(
+        settingListTables(
           {
             search: searchQuery,
             active: activeFilter,

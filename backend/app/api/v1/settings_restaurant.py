@@ -16,15 +16,15 @@ from app.schemas.restaurant import RestaurantOut, ServiceTypeUpdate, RestaurantU
 from app.services.restaurant_services import RestaurantService
 from app.services.storage_service import StorageService
 
-router = APIRouter(tags=["settings"])
+router = APIRouter(tags=["settings restaurant"])
 
-@router.get("/restaurant", response_model = RestaurantOut)
+@router.get("/settings/restaurant-profile", response_model = RestaurantOut)
 def get(db: Session = Depends(get_db), _: dict = Depends(get_current_user)):
     restaurant = RestaurantService(db).restaurant.get()
     service_types = RestaurantService(db).service_type.get_list()
     return {"restaurant":restaurant, "service_types": service_types}
 
-@router.patch('/restaurant', response_model = RestaurantOut)
+@router.patch('/settings/restaurant-profile', response_model = RestaurantOut)
 def update_store(
     name: str | None = Form(default=None, min_length=1, max_length=150),
     phone_number: str | None = Form(default=None, max_length=50),
@@ -60,7 +60,7 @@ def update_store(
 
     return {"restaurant": updated_restaurant, "service_types": service_types}
     
-@router.patch("/service_type/{service_type_id}", response_model = ServiceTypeOut)
+@router.patch("/settings/service_type/{service_type_id}", response_model = ServiceTypeOut)
 def update_service_type(service_type_id: int, payload: ServiceTypeUpdate, db: Session = Depends(get_db), _: dict = Depends(get_current_user)):
     print(f"service type id: {service_type_id}")
     return RestaurantService(db).update_service_type(service_type_id, payload)

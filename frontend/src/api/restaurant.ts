@@ -32,7 +32,7 @@ function authHeaders(token?: string): HeadersInit {
 }
 
 export function getRestaurant(token?: string) : Promise<RestaurantOut> {
-  return apiFetch<RestaurantOut>('/restaurant', {
+  return apiFetch<RestaurantOut>('/settings/restaurant-profile', {
     method: "GET",
     headers: authHeaders(token)
   })
@@ -47,7 +47,7 @@ export function updateRestaurant(
   if (input.phone_number !== undefined) form.append("phone_number", String(input.phone_number));
   if (input.address !== undefined) form.append("address", input.address);
   if (input.image) form.append("image", input.image);
-  return apiFetch<RestaurantInput>(`/restaurant`, {
+  return apiFetch<RestaurantInput>(`/settings/restaurant-profile`, {
     method: "PATCH",
     headers: authHeaders(token),
     body: form,
@@ -59,7 +59,7 @@ export function updateServicesType(
   input: Partial<ServiceType>,
   token?: string,
 ): Promise<ServiceType> {
-  return apiFetch<ServiceType>(`/service_type/${service_type_id}`, {
+  return apiFetch<ServiceType>(`/settings/service_type/${service_type_id}`, {
     method:"PATCH",
     headers: authHeaders(token),
     body: JSON.stringify(input),
