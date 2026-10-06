@@ -5,7 +5,15 @@ from sqlalchemy.orm import Session
 from app.models.category import Category
 from app.models.product import Product
 from app.repositories.catalog_repo import CategoryRepository, ProductRepository
-from app.schemas.catalog import CategoryCreate, CategoryUpdate, InventoryUpdate, ProductCreate, ProductUpdate
+from app.schemas.catalog import (
+    CategoryCreate,
+    CategoryUpdate,
+    InventoryUpdate,
+    ProductCreate,
+    ProductOut,
+    ProductUpdate,
+)
+from app.services.storage_service import StorageService
 
 
 def _commit(db: Session) -> None:
@@ -17,10 +25,38 @@ def _commit(db: Session) -> None:
 
 
 class CatalogService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, storage_service: StorageService | None = None):
         self.db = db
         self.categories = CategoryRepository(db)
         self.products = ProductRepository(db)
+        self.storage_service = storage_service
+
+    def _product_out(self, product: Product) -> ProductOut:
+        result = ProductOut.model_validate(product)
+        filename = product.image_url
+        if filename and not filename.startswith(("http://", "https://")):
+            storage_service = self.storage_service or StorageService()
+            result = result.model_copy(
+                update={"image_url": storage_service.get_public_url(filename)}
+            )
+        return result
+
+    def list_products(
+        self,
+        active: bool | None = None,
+        category_id: int | None = None,
+        search: str | None = None,
+        page: int | None = 1,
+        display: int | None = 10,
+    ) -> list[ProductOut]:
+        products = self.products.list(active, category_id, search, page, display)
+        return [self._product_out(product) for product in products]
+
+    def get_product(self, product_id: int) -> ProductOut:
+        product = self.products.get(product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        return self._product_out(product)
 
     def create_category(self, payload: CategoryCreate) -> Category:
         category = self.categories.create(Category(**payload.model_dump()))
@@ -47,15 +83,15 @@ class CatalogService:
         self.db.delete(category)
         _commit(self.db)
 
-    def create_product(self, payload: ProductCreate) -> Product:
+    def create_product(self, payload: ProductCreate) -> ProductOut:
         if not self.categories.get(payload.category_id):
             raise HTTPException(status_code=400, detail="Category not found")
         product = self.products.create(Product(**payload.model_dump()))
         _commit(self.db)
         self.db.refresh(product)
-        return product
+        return self._product_out(product)
 
-    def update_product(self, product_id: int, payload: ProductUpdate) -> Product:
+    def update_product(self, product_id: int, payload: ProductUpdate) -> ProductOut:
         product = self.products.get(product_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
@@ -66,16 +102,16 @@ class CatalogService:
             setattr(product, key, value)
         _commit(self.db)
         self.db.refresh(product)
-        return product
+        return self._product_out(product)
 
-    def update_inventory(self, product_id: int, payload: InventoryUpdate) -> Product:
+    def update_inventory(self, product_id: int, payload: InventoryUpdate) -> ProductOut:
         product = self.products.get(product_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         product.stock_quantity = payload.stock_quantity
         _commit(self.db)
         self.db.refresh(product)
-        return product
+        return self._product_out(product)
 
     def delete_product(self, product_id: int) -> None:
         product = self.products.get(product_id)

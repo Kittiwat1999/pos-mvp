@@ -11,6 +11,7 @@ def rollback_test_data():
     connection = engine.connect()
     transaction = connection.begin()
     previous_override = app.dependency_overrides.get(get_db)
+    app.state.test_db_connection = connection
 
     def override_get_db():
         with Session(
@@ -27,5 +28,6 @@ def rollback_test_data():
             app.dependency_overrides.pop(get_db, None)
         else:
             app.dependency_overrides[get_db] = previous_override
+        del app.state.test_db_connection
         transaction.rollback()
         connection.close()
