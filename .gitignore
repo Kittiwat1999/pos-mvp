@@ -54,7 +54,4 @@ frontend/.coverage/
 frontend/coverage/
 .pnpm-store
 
-# documents
-docs/
-
 .cursor/
